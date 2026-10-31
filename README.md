@@ -1,5 +1,7 @@
 # 👻 Inboxorcist
 
+[![CI](https://github.com/Harshul0025/inboxorcist/actions/workflows/ci.yml/badge.svg)](https://github.com/Harshul0025/inboxorcist/actions/workflows/ci.yml) · **Live demo:** https://inboxorcist.vercel.app
+
 **A fast-paced Halloween arcade game that actually cleans your Gmail inbox while you play.**
 
 Built for _PromptWars × OUTLIER'2026_. The challenge: _"Build an experience where playing a fast-paced game or interactive story actually executes the real-world chore in the background."_
