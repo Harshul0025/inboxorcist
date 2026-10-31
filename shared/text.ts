@@ -27,12 +27,9 @@ export function truncate(value: string, max: number): string {
  * @param value Untrusted text, e.g. an email subject.
  */
 export function cleanText(value: string): string {
-  return (
-    value
-      // Matching control characters is the point of this function.
-      // eslint-disable-next-line no-control-regex
-      .replace(/[\u0000-\u001f\u007f]+/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim()
-  );
+  // \p{Cc} matches control characters (C0, DEL and C1) without control-character literals.
+  return value
+    .replace(/\p{Cc}+/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }

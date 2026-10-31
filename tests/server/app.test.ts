@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import request from 'supertest';
 import { describe, expect, it, vi } from 'vitest';
-import { injectNonce } from '../../server/app';
+import { injectNonce } from '../../server/static';
 import { UnsafeUrlError } from '../../server/services/unsubscribe';
 import { buildApp, fakeGameMaster, groups, stats, testConfig } from './helpers';
 
@@ -43,6 +43,10 @@ describe('security headers', () => {
     expect(a.headers['x-frame-options']).toBe('DENY');
     expect(a.headers['cross-origin-opener-policy']).toBe('same-origin-allow-popups');
     expect(a.headers['x-powered-by']).toBeUndefined();
+    expect(csp).not.toContain('unsafe-inline');
+    expect(csp).toContain("style-src-attr 'none'");
+    expect(a.headers['permissions-policy']).toContain('camera=()');
+    expect(a.headers['permissions-policy']).toContain('clipboard-write=(self)');
   });
 
   it('upgrades insecure requests in production and allows emulators when asked', async () => {

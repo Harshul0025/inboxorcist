@@ -140,7 +140,11 @@ export function GhostWave({ ghosts, mode, executor, onDecision, onRescued, onCom
         </h2>
         <span className="text-sm text-slate-300">{strings.ghosts.of(index + 1, ghosts.length)}</span>
       </div>
-      {souls && <p className="mt-1 text-slate-300">{strings.ghosts.soulsIntro}</p>}
+      {souls && (
+        <p id="souls-intro" className="mt-1 text-slate-300">
+          {strings.ghosts.soulsIntro}
+        </p>
+      )}
 
       <div className="mt-3 h-2.5 overflow-hidden rounded-full border border-white/10 bg-black/40" aria-hidden="true">
         <div
@@ -190,6 +194,7 @@ export function GhostWave({ ghosts, mode, executor, onDecision, onRescued, onCom
           type="button"
           className="btn btn-danger"
           disabled={!canBanish}
+          aria-describedby={souls ? 'souls-intro' : undefined}
           aria-keyshortcuts="ArrowLeft"
           title={canBanish ? undefined : strings.ghosts.banishDisabled}
           onClick={() => {

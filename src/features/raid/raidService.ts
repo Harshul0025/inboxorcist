@@ -14,7 +14,7 @@ import {
 import { RAID_CREATE_ATTEMPTS, RAID_TAP_FLUSH_MS } from '../../../shared/constants';
 import type { PublicConfig } from '../../../shared/types';
 import { getFirebaseApp } from '../../lib/firebaseApp';
-import { clampTapFlush, generateRoomCode, type RoomState, type VoteChoice } from './raidLogic';
+import { clampTapFlush, generateRoomCode, parseRoomState, type RoomState, type VoteChoice } from './raidLogic';
 
 export interface RaidConnection {
   db: Database;
@@ -82,7 +82,7 @@ export function subscribeRoom(
   return onValue(
     ref(conn.db, roomPath(code)),
     (snapshot) => {
-      onRoom(snapshot.exists() ? (snapshot.val() as RoomState) : null);
+      onRoom(snapshot.exists() ? parseRoomState(snapshot.val()) : null);
     },
     onError,
   );

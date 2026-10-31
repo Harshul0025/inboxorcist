@@ -1,29 +1,24 @@
-import QRCode from 'qrcode';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { RAID_TAPS_PER_HIT, RAID_VOTE_GRACE_MS, RAID_VOTE_MS } from '../../../shared/constants';
 import type { RunStats } from '../../../shared/types';
 import type { ChoreAdapter } from '../../adapters/types';
 import { useAnnounce } from '../../app/announcer';
 import { useServices } from '../../app/services';
-import { GhostSprite } from '../../components/GhostSprite';
+import { useStory } from '../../app/story';
 import { OfflineBanner } from '../../components/OfflineBanner';
 import { useRunSetup } from '../../hooks/useRunSetup';
 import { useScoreboard } from '../../hooks/useScoreboard';
 import { useUnreadCounter } from '../../hooks/useUnreadCounter';
-import type { BossSpec, EncounterPlan, GhostSpec } from '../../lib/encounters';
+import type { EncounterPlan } from '../../lib/encounters';
 import { createRunId, RunExecutor } from '../../lib/executor';
 import { formatCount } from '../../lib/scoring';
-import { playSound } from '../../lib/sound';
 import { storyLines } from '../../lib/story';
-import { useSettings } from '../../app/settings';
-import { useStory } from '../../app/story';
 import { strings } from '../../strings';
-import { useBossEngine } from '../boss/useBossEngine';
 import { EndScreen } from '../endscreen/EndScreen';
-import { GhostWave } from '../ghosts/GhostWave';
 import { Briefing } from '../solo/Briefing';
 import { SetupStatus } from '../solo/SetupStatus';
-import { buildRaidSteps, newHits, rankMvps, type RoomState, sumTaps, tallyVotes } from './raidLogic';
+import { Lobby } from './Lobby';
+import { RaidBossStage } from './RaidBossStage';
+import { buildRaidSteps, rankMvps, type RoomState } from './raidLogic';
 import {
   connectRaid,
   createRoom,
@@ -32,6 +27,8 @@ import {
   trackHostPresence,
   updateRoom,
 } from './raidService';
+import { RaidVoteStage } from './RaidVoteStage';
+import { SoulsStage } from './SoulsStage';
 
 interface RaidHostProps {
   adapter: ChoreAdapter;
@@ -272,285 +269,6 @@ function RaidSession({ adapter, plan, totalUnread, categories, onExit, onAgain }
       {step?.kind === 'souls' && (
         <SoulsStage key={stepIndex} ghosts={step.ghosts} executor={executor} conn={conn} code={code} onDone={next} />
       )}
-    </div>
-  );
-}
-
-/** @internal Exported for tests. */
-export function Lobby({ code, names, onStart }: { code: string; names: string[]; onStart: () => void }) {
-  const [qr, setQr] = useState<string | null>(null);
-  const joinUrl = `${window.location.origin}/?room=${code}`;
-
-  useEffect(() => {
-    let active = true;
-    QRCode.toDataURL(joinUrl, { margin: 1, width: 320 }).then(
-      (url) => {
-        if (active) setQr(url);
-      },
-      () => undefined,
-    );
-    return () => {
-      active = false;
-    };
-  }, [joinUrl]);
-
-  return (
-    <section aria-labelledby="lobby-heading" className="card grid gap-6 md:grid-cols-2">
-      <div className="text-center">
-        <h2 id="lobby-heading" className="font-spooky text-gradient text-5xl">
-          {strings.raid.hostHeading}
-        </h2>
-        <p className="mt-2 text-slate-300">{strings.raid.joinUrl}</p>
-        {qr && (
-          <img
-            src={qr}
-            alt={strings.raid.qrAlt(code)}
-            width={320}
-            height={320}
-            className="mx-auto mt-4 rounded-2xl bg-white p-2"
-          />
-        )}
-        <p className="mt-3 text-5xl font-black tracking-[0.4em]" data-testid="room-code">
-          {code}
-        </p>
-        <p className="mt-1 break-all text-sm text-slate-400">{joinUrl}</p>
-      </div>
-      <div>
-        <h3 className="text-xl font-bold">{strings.raid.players(names.length)}</h3>
-        {names.length === 0 ? (
-          <p className="mt-2 text-slate-400">{strings.raid.noPlayers}</p>
-        ) : (
-          <ul className="mt-2 flex flex-wrap gap-2" data-testid="player-list">
-            {names.map((name, position) => (
-              <li key={`${name}-${position}`} className="rounded-full bg-purple-900/60 px-3 py-1">
-                {name}
-              </li>
-            ))}
-          </ul>
-        )}
-        <button type="button" className="btn btn-primary mt-6" disabled={names.length === 0} onClick={onStart}>
-          {strings.raid.start}
-        </button>
-      </div>
-    </section>
-  );
-}
-
-interface RaidBossStageProps {
-  boss: BossSpec;
-  adapter: ChoreAdapter;
-  executor: RunExecutor;
-  importantIds: ReadonlySet<string>;
-  conn: RaidConnection;
-  code: string;
-  room: RoomState;
-  paused: boolean;
-  onHit: (emails: number) => void;
-  onDone: (cleared: number) => void;
-}
-
-/** @internal Exported for tests. */
-export function RaidBossStage({
-  boss,
-  adapter,
-  executor,
-  importantIds,
-  conn,
-  code,
-  room,
-  paused,
-  onHit,
-  onDone,
-}: RaidBossStageProps) {
-  const { sound } = useSettings();
-  const tell = useStory();
-  const cleared = useRef(0);
-  const baseline = useRef<number | null>(null);
-  const hitsDone = useRef(0);
-  const handleChunk = useCallback(
-    (emails: number) => {
-      cleared.current += emails;
-      onHit(emails);
-      if (sound) playSound('hit');
-    },
-    [onHit, sound],
-  );
-  const engine = useBossEngine({ boss, adapter, executor, importantIds, onChunk: handleChunk });
-  const totalTaps = sumTaps(room.taps);
-
-  useEffect(() => {
-    if (engine.status !== 'fighting' && engine.status !== 'defeated') return;
-    void updateRoom(conn, code, {
-      status: 'boss',
-      boss: { summary: boss.summary, hp: engine.hp, maxHp: engine.maxHp },
-    }).catch(() => undefined);
-  }, [boss.summary, code, conn, engine.hp, engine.maxHp, engine.status]);
-
-  useEffect(() => {
-    if (engine.status !== 'fighting' || paused) return;
-    baseline.current ??= totalTaps;
-    const earned = newHits(totalTaps, baseline.current, hitsDone.current, RAID_TAPS_PER_HIT);
-    for (let i = 0; i < earned; i += 1) engine.hit();
-    hitsDone.current += earned;
-  }, [engine, paused, totalTaps]);
-
-  const pleaded = useRef(false);
-  useEffect(() => {
-    if (pleaded.current || engine.status !== 'fighting' || engine.maxHp === 0) return;
-    if (engine.hp > 0 && engine.hp <= engine.maxHp / 2) {
-      pleaded.current = true;
-      tell(storyLines.bossPlea(boss.bossName, boss.plea));
-    }
-  }, [boss.bossName, boss.plea, engine.hp, engine.maxHp, engine.status, tell]);
-
-  const done = useRef(false);
-  useEffect(() => {
-    if (done.current) return;
-    if (engine.status === 'defeated' || engine.status === 'empty') {
-      done.current = true;
-      if (engine.status === 'defeated') tell(storyLines.bossDefeated(boss.epitaph));
-      onDone(cleared.current);
-    }
-  }, [boss.epitaph, engine.status, onDone, tell]);
-
-  const percent = engine.maxHp > 0 ? (engine.hp / engine.maxHp) * 100 : 0;
-
-  return (
-    <section aria-labelledby="raid-boss" className="card text-center">
-      <h2 id="raid-boss" className="sensitive font-spooky text-gradient text-glow text-5xl sm:text-6xl">
-        {boss.bossName}
-      </h2>
-      <p className="mt-1 text-lg text-slate-300">{boss.summary}</p>
-      <div className="float mt-4 flex justify-center">
-        <GhostSprite seed={boss.sender} size={200} />
-      </div>
-      <div
-        role="progressbar"
-        aria-label={strings.boss.hp}
-        aria-valuemin={0}
-        aria-valuemax={engine.maxHp}
-        aria-valuenow={engine.hp}
-        aria-valuetext={strings.boss.hpValue(engine.hp, engine.maxHp)}
-        className="hp-bar mt-4"
-      >
-        <div className="hp-fill" style={{ transform: `scaleX(${percent / 100})` }} />
-      </div>
-      <p className="mt-2 tabular-nums" data-testid="boss-hp">
-        {strings.boss.hpValue(engine.hp, engine.maxHp)}
-      </p>
-      <p className="mt-4 text-2xl font-bold">{strings.raid.bossPrompt}</p>
-      <p className="mt-1 tabular-nums text-slate-300">
-        {strings.raid.tapsToHit(totalTaps % RAID_TAPS_PER_HIT, RAID_TAPS_PER_HIT)}
-      </p>
-      {engine.status === 'loading' && <p className="mt-3 text-slate-400">{strings.boss.loading}</p>}
-      {engine.status === 'error' && (
-        <div role="alert" className="mt-3">
-          <p className="text-rose-300">{strings.boss.error}</p>
-          <button type="button" className="btn btn-primary mt-2" onClick={engine.retry}>
-            {strings.boss.retry}
-          </button>
-        </div>
-      )}
-    </section>
-  );
-}
-
-interface RaidVoteStageProps {
-  ghost: GhostSpec;
-  voteId: string;
-  executor: RunExecutor;
-  conn: RaidConnection;
-  code: string;
-  room: RoomState;
-  onDone: () => void;
-}
-
-/** @internal Exported for tests. */
-export function RaidVoteStage({ ghost, voteId, executor, conn, code, room, onDone }: RaidVoteStageProps) {
-  const announce = useAnnounce();
-  const [result, setResult] = useState<string | null>(null);
-  // The vote must run exactly once per stage, so the timer reads the latest props through a ref.
-  const latest = useRef({ ghost, voteId, executor, conn, code, room, onDone, announce });
-  useEffect(() => {
-    latest.current = { ghost, voteId, executor, conn, code, room, onDone, announce };
-  });
-
-  useEffect(() => {
-    let active = true;
-    const start = latest.current;
-    void updateRoom(start.conn, start.code, {
-      status: 'vote',
-      vote: { id: start.voteId, summary: start.ghost.summary, endsAt: Date.now() + RAID_VOTE_MS },
-    }).catch(() => undefined);
-
-    const timer = setTimeout(() => {
-      const now = latest.current;
-      const tally = tallyVotes(now.room.votes?.[now.voteId]);
-      const text = strings.raid.voteResult(tally.banish, tally.keep, tally.winner);
-      setResult(text);
-      now.announce(text);
-      void updateRoom(now.conn, now.code, { lastResult: text }).catch(() => undefined);
-      now.executor
-        .apply(now.ghost.isImportant ? 'keep' : tally.winner, [now.ghost.email.id])
-        .catch(() => undefined)
-        .finally(() => {
-          if (active) setTimeout(() => latest.current.onDone(), RAID_VOTE_GRACE_MS * 3);
-        });
-    }, RAID_VOTE_MS + RAID_VOTE_GRACE_MS);
-
-    return () => {
-      active = false;
-      clearTimeout(timer);
-    };
-  }, []);
-
-  const live = tallyVotes(room.votes?.[voteId]);
-  return (
-    <section aria-labelledby="vote-heading" className="card text-center">
-      <h2 id="vote-heading" className="font-spooky text-gradient text-6xl">
-        {strings.raid.voteHeading}
-      </h2>
-      <p className="mt-2 text-xl text-slate-200">{ghost.summary}</p>
-      <p className="sensitive mt-1 text-slate-400">{ghost.email.subject}</p>
-      <p className="mt-4 text-3xl font-bold tabular-nums">
-        <span className="text-rose-300">
-          {strings.raid.voteBanish} {live.banish}
-        </span>
-        {' · '}
-        <span className="text-emerald-300">
-          {strings.raid.voteKeep} {live.keep}
-        </span>
-      </p>
-      {result && (
-        <p role="status" className="mt-3 text-lg text-amber-200">
-          {result}
-        </p>
-      )}
-    </section>
-  );
-}
-
-/** @internal Exported for tests. */
-export function SoulsStage({
-  ghosts,
-  executor,
-  conn,
-  code,
-  onDone,
-}: {
-  ghosts: GhostSpec[];
-  executor: RunExecutor;
-  conn: RaidConnection;
-  code: string;
-  onDone: () => void;
-}) {
-  useEffect(() => {
-    void updateRoom(conn, code, { status: 'souls' }).catch(() => undefined);
-  }, [code, conn]);
-  return (
-    <div>
-      <p className="mb-3 text-center text-slate-300">{strings.raid.soulsHost}</p>
-      <GhostWave ghosts={ghosts} mode="souls" executor={executor} onDecision={() => undefined} onComplete={onDone} />
     </div>
   );
 }

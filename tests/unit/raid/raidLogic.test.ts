@@ -8,6 +8,7 @@ import {
   clampTapFlush,
   generateRoomCode,
   newHits,
+  parseRoomState,
   rankMvps,
   sanitizeNickname,
   sumTaps,
@@ -65,6 +66,20 @@ describe('raid logic', () => {
       { name: 'Chen', taps: 0 },
     ]);
     expect(rankMvps(undefined, undefined)).toEqual([]);
+  });
+
+  it('validates room snapshots from the database', () => {
+    const room = { hostUid: 'h', status: 'boss', hostOnline: true, createdAt: 1, taps: { p1: 4 }, extra: 'ignored' };
+    expect(parseRoomState(room)).toEqual({
+      hostUid: 'h',
+      status: 'boss',
+      hostOnline: true,
+      createdAt: 1,
+      taps: { p1: 4 },
+    });
+    expect(parseRoomState({ ...room, status: 'hacked' })).toBeNull();
+    expect(parseRoomState({ ...room, taps: { p1: 'lots' } })).toBeNull();
+    expect(parseRoomState(null)).toBeNull();
   });
 
   it('turns ghost waves into a capped number of crowd votes', async () => {

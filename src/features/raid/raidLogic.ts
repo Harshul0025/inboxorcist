@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import {
   RAID_CODE_ALPHABET,
   RAID_CODE_LENGTH,
@@ -8,40 +9,44 @@ import {
 import { cleanText } from '../../../shared/text';
 import type { BossSpec, EncounterPlan, GhostSpec } from '../../lib/encounters';
 
-export type RoomStatus = 'lobby' | 'boss' | 'vote' | 'souls' | 'ended';
+const roomPlayerSchema = z.object({
+  name: z.string(),
+  online: z.boolean(),
+  joinedAt: z.number().optional(),
+});
+
+/**
+ * Shape of `rooms/{code}` in the Realtime Database. It only ever holds
+ * summaries, never senders or subjects. Snapshots are validated against it
+ * because database data is untrusted input.
+ */
+export const roomStateSchema = z.object({
+  hostUid: z.string(),
+  status: z.enum(['lobby', 'boss', 'vote', 'souls', 'ended']),
+  hostOnline: z.boolean(),
+  createdAt: z.number(),
+  boss: z.object({ summary: z.string(), hp: z.number(), maxHp: z.number() }).optional(),
+  vote: z.object({ id: z.string(), summary: z.string(), endsAt: z.number() }).optional(),
+  lastResult: z.string().optional(),
+  stats: z.object({ cleared: z.number(), durationMs: z.number() }).optional(),
+  players: z.record(z.string(), roomPlayerSchema).optional(),
+  taps: z.record(z.string(), z.number()).optional(),
+  /** Choices stay plain strings here; `tallyVotes` ignores anything that is not banish or keep. */
+  votes: z.record(z.string(), z.record(z.string(), z.string())).optional(),
+});
+
+export type RoomState = z.infer<typeof roomStateSchema>;
+export type RoomStatus = RoomState['status'];
+export type RoomPlayer = z.infer<typeof roomPlayerSchema>;
 export type VoteChoice = 'banish' | 'keep';
 
-export interface RoomPlayer {
-  name: string;
-  online: boolean;
-  joinedAt?: number;
-}
-
-export interface RoomBoss {
-  summary: string;
-  hp: number;
-  maxHp: number;
-}
-
-export interface RoomVote {
-  id: string;
-  summary: string;
-  endsAt: number;
-}
-
-/** Shape of `rooms/{code}` in the Realtime Database. Only summaries, never senders or subjects. */
-export interface RoomState {
-  hostUid: string;
-  status: RoomStatus;
-  hostOnline: boolean;
-  createdAt: number;
-  boss?: RoomBoss;
-  vote?: RoomVote;
-  lastResult?: string;
-  stats?: { cleared: number; durationMs: number };
-  players?: Record<string, RoomPlayer>;
-  taps?: Record<string, number>;
-  votes?: Record<string, Record<string, VoteChoice>>;
+/**
+ * Validates a raw database snapshot; returns null for missing or malformed rooms.
+ * @param raw Value from `snapshot.val()`.
+ */
+export function parseRoomState(raw: unknown): RoomState | null {
+  const parsed = roomStateSchema.safeParse(raw);
+  return parsed.success ? parsed.data : null;
 }
 
 export type RaidStep =

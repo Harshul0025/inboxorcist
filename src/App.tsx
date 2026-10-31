@@ -40,7 +40,9 @@ function Header() {
         <label className="flex cursor-pointer items-center gap-2" title={strings.settings.streamerHint}>
           <input
             type="checkbox"
+            role="switch"
             className="switch"
+            aria-describedby="streamer-hint"
             checked={streamer}
             onChange={(event) => {
               setStreamer(event.target.checked);
@@ -48,9 +50,14 @@ function Header() {
           />
           {strings.settings.streamer}
         </label>
+        {/* Visually hidden (absolutely positioned), so the flex layout is unchanged. */}
+        <span id="streamer-hint" className="sr-only">
+          {strings.settings.streamerHint}
+        </span>
         <label className="flex cursor-pointer items-center gap-2">
           <input
             type="checkbox"
+            role="switch"
             className="switch"
             checked={sound}
             onChange={(event) => {

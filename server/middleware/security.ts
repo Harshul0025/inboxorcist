@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto';
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import helmet from 'helmet';
 
@@ -20,19 +21,28 @@ const GOOGLE_CONNECT = [
 ];
 const EMULATOR_CONNECT = ['http://127.0.0.1:9000', 'ws://127.0.0.1:9000', 'http://127.0.0.1:9099'];
 
+const nonces = new WeakMap<object, string>();
+
 /**
- * Generates a fresh CSP nonce for every request and stores it on
- * `res.locals.cspNonce`.
+ * Generates a fresh CSP nonce for every request.
  */
 export function cspNonce(): RequestHandler {
   return (_req, res, next) => {
-    res.locals.cspNonce = randomBytes(16).toString('base64');
+    nonces.set(res, randomBytes(16).toString('base64'));
     next();
   };
 }
 
-function nonceDirective(_req: unknown, res: unknown): string {
-  return `'nonce-${String((res as Response).locals.cspNonce)}'`;
+/**
+ * The CSP nonce generated for a response by `cspNonce()`.
+ * @param res The response object.
+ */
+export function nonceFor(res: object): string {
+  return nonces.get(res) ?? '';
+}
+
+function nonceDirective(_req: IncomingMessage, res: ServerResponse): string {
+  return `'nonce-${nonceFor(res)}'`;
 }
 
 /**
@@ -48,8 +58,8 @@ export function securityHeaders(options: { useEmulators: boolean; upgradeInsecur
         'default-src': ["'self'"],
         'script-src': ["'self'", nonceDirective, "'strict-dynamic'", 'https://accounts.google.com/gsi/client'],
         'style-src': ["'self'", nonceDirective, 'https://accounts.google.com/gsi/style'],
-        // Third-party widgets (Google sign-in, reCAPTCHA) set inline style attributes.
-        'style-src-attr': ["'unsafe-inline'"],
+        // No inline style attributes: React and Motion style elements through the CSSOM, which CSP allows.
+        'style-src-attr': ["'none'"],
         'img-src': ["'self'", 'data:', 'https://*.googleusercontent.com', 'https://www.gstatic.com'],
         'font-src': ["'self'"],
         'connect-src': ["'self'", ...GOOGLE_CONNECT, ...(options.useEmulators ? EMULATOR_CONNECT : [])],
@@ -73,6 +83,27 @@ export function securityHeaders(options: { useEmulators: boolean; upgradeInsecur
     xFrameOptions: { action: 'deny' },
     strictTransportSecurity: { maxAge: 31_536_000, includeSubDomains: true },
   });
+}
+
+/** Browser features the game never needs are switched off for this origin and any frames. */
+export const PERMISSIONS_POLICY = [
+  'camera=()',
+  'microphone=()',
+  'geolocation=()',
+  'payment=()',
+  'usb=()',
+  'serial=()',
+  'bluetooth=()',
+  'browsing-topics=()',
+  'clipboard-write=(self)',
+].join(', ');
+
+/** Sends the Permissions-Policy header (Helmet does not set it). */
+export function permissionsPolicy(): RequestHandler {
+  return (_req, res, next) => {
+    res.setHeader('Permissions-Policy', PERMISSIONS_POLICY);
+    next();
+  };
 }
 
 /**

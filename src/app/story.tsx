@@ -67,6 +67,7 @@ export function StoryProvider({ children }: { children: ReactNode }) {
     <StoryContext.Provider value={value}>
       {children}
       <section
+        role="log"
         aria-label={strings.story.regionLabel}
         aria-live="polite"
         className="pointer-events-none fixed inset-x-2 top-2 z-40 flex flex-col gap-2 sm:inset-x-auto sm:top-auto sm:bottom-4 sm:left-4 sm:w-88"

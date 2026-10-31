@@ -9,15 +9,14 @@ import {
 import type { ChoreAdapter } from '../../adapters/types';
 import { useAnnounce } from '../../app/announcer';
 import { useSettings } from '../../app/settings';
-import { useStory } from '../../app/story';
 import { GhostSprite } from '../../components/GhostSprite';
 import { Graveyard } from '../../components/Graveyard';
 import type { BossSpec } from '../../lib/encounters';
 import type { RunExecutor } from '../../lib/executor';
 import { playSound } from '../../lib/sound';
-import { storyLines } from '../../lib/story';
 import { strings } from '../../strings';
 import { useBossEngine } from './useBossEngine';
+import { useBossStory } from './useBossStory';
 
 export const ARROW_KEYS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'] as const;
 export type ArrowKey = (typeof ARROW_KEYS)[number];
@@ -60,7 +59,6 @@ export function BossFight({
 }: BossFightProps) {
   const { reducedMotion, sound } = useSettings();
   const announce = useAnnounce();
-  const tell = useStory();
   const clearedRef = useRef(0);
   const [shake, setShake] = useState(0);
   const [spawn, setSpawn] = useState(0);
@@ -87,6 +85,7 @@ export function BossFight({
   );
 
   const engine = useBossEngine({ boss, adapter, executor, importantIds, onChunk: handleChunk });
+  useBossStory(boss, engine);
   const windowMs = reducedMotion
     ? REDUCED_MOTION_WINDOW_MS
     : Math.max(WEAK_SPOT_MIN_WINDOW_MS, WEAK_SPOT_WINDOW_MS - streak * WEAK_SPOT_WINDOW_STEP_MS);
@@ -130,15 +129,6 @@ export function BossFight({
     };
   }, [engine.status, onMiss, sound, spot.key, strike]);
 
-  const pleaded = useRef(false);
-  useEffect(() => {
-    if (pleaded.current || engine.status !== 'fighting' || engine.maxHp === 0) return;
-    if (engine.hp > 0 && engine.hp <= engine.maxHp / 2) {
-      pleaded.current = true;
-      tell(storyLines.bossPlea(boss.bossName, boss.plea));
-    }
-  }, [boss.bossName, boss.plea, engine.hp, engine.maxHp, engine.status, tell]);
-
   const finished = useRef(false);
   useEffect(() => {
     if (finished.current) return;
@@ -146,10 +136,9 @@ export function BossFight({
       finished.current = true;
       if (sound) playSound('defeat');
       announce(strings.boss.defeated(boss.bossName), 'assertive');
-      tell(storyLines.bossDefeated(boss.epitaph));
       onDefeated(clearedRef.current);
     }
-  }, [announce, boss.bossName, boss.epitaph, engine.status, onDefeated, sound, tell]);
+  }, [announce, boss.bossName, engine.status, onDefeated, sound]);
 
   const percent = engine.maxHp > 0 ? (engine.hp / engine.maxHp) * 100 : 0;
 
@@ -215,7 +204,9 @@ export function BossFight({
 
       {(engine.status === 'fighting' || engine.status === 'defeated') && (
         <>
-          <p className="mt-4 text-center text-sm text-violet-200/80">{strings.boss.instructions}</p>
+          <p id="boss-instructions" className="mt-4 text-center text-sm text-violet-200/80">
+            {strings.boss.instructions}
+          </p>
           <div className="arena mt-3 h-80 sm:h-96">
             <Graveyard />
             {!reducedMotion && shake > 0 && (
@@ -259,6 +250,7 @@ export function BossFight({
                 type="button"
                 data-testid="weak-spot"
                 aria-label={strings.boss.strike(ARROW_SYMBOL[spot.key])}
+                aria-describedby="boss-instructions"
                 aria-keyshortcuts={spot.key}
                 onClick={strike}
                 className="weak-spot absolute flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-2xl font-black text-slate-950"

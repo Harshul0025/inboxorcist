@@ -1,12 +1,12 @@
 import { type SyntheticEvent, useEffect, useRef, useState } from 'react';
-import { RAID_NAME_MAX, RAID_VOTE_MS } from '../../../shared/constants';
-import { useAnnounce } from '../../app/announcer';
+import { RAID_NAME_MAX } from '../../../shared/constants';
 import { useServices } from '../../app/services';
 import { GhostSprite } from '../../components/GhostSprite';
-import { formatCount } from '../../lib/scoring';
 import { strings } from '../../strings';
-import { rankMvps, type RoomState, sanitizeNickname, type VoteChoice } from './raidLogic';
-import { castVote, connectRaid, createTapFlusher, joinRoom, type RaidConnection, subscribeRoom } from './raidService';
+import { rankMvps, type RoomState, sanitizeNickname } from './raidLogic';
+import { connectRaid, joinRoom, type RaidConnection, subscribeRoom } from './raidService';
+import { TapPad } from './TapPad';
+import { VotePad } from './VotePad';
 
 type Stage = 'connecting' | 'form' | 'joining' | 'joined' | 'failed';
 
@@ -173,115 +173,4 @@ function PlayerStage({
         </section>
       );
   }
-}
-
-function TapPad({ conn, code, room }: { conn: RaidConnection; code: string; room: RoomState }) {
-  // Created in the effect (not in state) so a cleanup/remount cycle always gets a live flusher.
-  const flusher = useRef<ReturnType<typeof createTapFlusher> | null>(null);
-  const [mine, setMine] = useState(0);
-
-  useEffect(() => {
-    const current = createTapFlusher(conn, code);
-    flusher.current = current;
-    return () => {
-      current.dispose();
-      flusher.current = null;
-    };
-  }, [conn, code]);
-
-  const tap = () => {
-    flusher.current?.add(1);
-    setMine((value) => value + 1);
-  };
-
-  const boss = room.boss;
-  const percent = boss && boss.maxHp > 0 ? (boss.hp / boss.maxHp) * 100 : 100;
-  return (
-    <section className="mx-auto flex max-w-md flex-col items-center gap-4 text-center">
-      {boss && <p className="text-lg text-slate-200">{boss.summary}</p>}
-      <div className="hp-bar w-full" aria-hidden="true">
-        <div className="hp-fill" style={{ transform: `scaleX(${percent / 100})` }} />
-      </div>
-      {boss && <p className="tabular-nums">{strings.boss.hpValue(boss.hp, boss.maxHp)}</p>}
-      <button
-        type="button"
-        aria-label={strings.raid.tapLabel}
-        onClick={tap}
-        className="weak-spot-tap h-56 w-56 touch-manipulation rounded-full text-5xl font-black text-slate-950 select-none"
-      >
-        {strings.raid.tap}
-      </button>
-      <p className="tabular-nums text-slate-300">{strings.raid.yourTaps(mine)}</p>
-      {room.lastResult && <p className="text-sm text-slate-400">{room.lastResult}</p>}
-      <p className="sr-only">{formatCount(mine)}</p>
-    </section>
-  );
-}
-
-function VotePad({ conn, code, room }: { conn: RaidConnection; code: string; room: RoomState }) {
-  const announce = useAnnounce();
-  const vote = room.vote;
-  const [choice, setChoice] = useState<VoteChoice | null>(null);
-  const [secondsLeft, setSecondsLeft] = useState(Math.ceil(RAID_VOTE_MS / 1000));
-
-  useEffect(() => {
-    const started = Date.now();
-    const ticker = setInterval(() => {
-      setSecondsLeft(Math.max(0, Math.ceil((RAID_VOTE_MS - (Date.now() - started)) / 1000)));
-    }, 250);
-    return () => {
-      clearInterval(ticker);
-    };
-  }, []);
-
-  if (!vote) return null;
-  const send = (value: VoteChoice) => {
-    setChoice(value);
-    castVote(conn, code, vote.id, value).then(
-      () => {
-        announce(strings.raid.voted);
-      },
-      () => {
-        setChoice(null);
-      },
-    );
-  };
-
-  return (
-    <section aria-labelledby="player-vote" className="card mx-auto max-w-md text-center">
-      <h2 id="player-vote" className="font-spooky text-gradient text-5xl">
-        {strings.raid.voteHeading}
-      </h2>
-      <p className="mt-2 text-lg">{vote.summary}</p>
-      <p className="mt-1 text-slate-400">{strings.raid.voteCountdown(secondsLeft)}</p>
-      {choice ? (
-        <p role="status" className="mt-4 text-emerald-300">
-          {strings.raid.voted}
-        </p>
-      ) : (
-        <div className="mt-4 grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            className="btn btn-danger h-24 text-2xl"
-            disabled={secondsLeft === 0}
-            onClick={() => {
-              send('banish');
-            }}
-          >
-            {strings.raid.voteBanish}
-          </button>
-          <button
-            type="button"
-            className="btn btn-success h-24 text-2xl"
-            disabled={secondsLeft === 0}
-            onClick={() => {
-              send('keep');
-            }}
-          >
-            {strings.raid.voteKeep}
-          </button>
-        </div>
-      )}
-    </section>
-  );
 }
