@@ -1,0 +1,18 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm run build:vercel",
+  "outputDirectory": "dist/client",
+  "rewrites": [{ "source": "/((?!assets/).*)", "destination": "/api/server" }],
+  "functions": {
+    "api/server.js": {
+      "maxDuration": 60,
+      "includeFiles": "dist/{server,html}/**"
+    }
+  },
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+    }
+  ]
+}
