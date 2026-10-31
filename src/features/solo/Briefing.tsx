@@ -49,7 +49,12 @@ export function Briefing({ plan, proposal, totalUnread, adapter, onStart, onBack
 
   return (
     <section aria-labelledby="briefing-heading" className="card">
-      <h2 id="briefing-heading" ref={headingRef} tabIndex={-1} className="text-3xl font-black">
+      <h2
+        id="briefing-heading"
+        ref={headingRef}
+        tabIndex={-1}
+        className="font-spooky text-gradient text-glow text-5xl sm:text-6xl"
+      >
         {strings.briefing.heading}
       </h2>
       <p className="mt-1 text-lg text-slate-200">{strings.briefing.unread(totalUnread)}</p>
@@ -61,10 +66,10 @@ export function Briefing({ plan, proposal, totalUnread, adapter, onStart, onBack
         <>
           {bosses.length > 0 && (
             <>
-              <h3 className="mt-5 font-semibold text-amber-200">{strings.briefing.bosses}</h3>
+              <h3 className="font-spooky mt-6 text-3xl text-amber-200">{strings.briefing.bosses}</h3>
               <ul className="mt-2 space-y-2">
                 {bosses.map((boss) => (
-                  <li key={boss.sender} className="rounded-2xl bg-slate-900 p-3">
+                  <li key={boss.sender} className="stat-pill !p-4">
                     <div className="flex flex-wrap justify-between gap-2">
                       <span className="sensitive font-bold">{boss.bossName}</span>
                       <span className="tabular-nums text-rose-300">{strings.briefing.hp(boss.estimatedHp)}</span>

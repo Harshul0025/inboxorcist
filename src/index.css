@@ -1,49 +1,158 @@
 @import 'tailwindcss';
 
+@theme {
+  --font-sans: 'Space Grotesk Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-spooky: 'Creepster', 'Space Grotesk Variable', cursive;
+  --color-ecto: #a3e635;
+  --color-pumpkin: #fb923c;
+  --color-candle: #facc15;
+  --color-hex: #c084fc;
+  --color-crypt: #0a0614;
+}
+
 @layer base {
   html {
     color-scheme: dark;
-    background: radial-gradient(circle at 20% 0%, #2e1065 0%, #0b0716 55%) fixed;
+    background-color: var(--color-crypt);
     color: #f1f5f9;
-    font-family:
-      ui-sans-serif,
-      system-ui,
-      -apple-system,
-      'Segoe UI',
-      Roboto,
-      sans-serif;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
   }
 
   body {
     min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Night sky: moon glow, stars and a vignette, all pure CSS (no image requests). */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    pointer-events: none;
+    background:
+      radial-gradient(circle at 85% 8%, rgb(250 204 21 / 0.18) 0, rgb(250 204 21 / 0.06) 9rem, transparent 18rem),
+      radial-gradient(1.5px 1.5px at 12% 18%, #fff8 50%, transparent 51%),
+      radial-gradient(1px 1px at 28% 42%, #fff6 50%, transparent 51%),
+      radial-gradient(1.5px 1.5px at 47% 12%, #fff9 50%, transparent 51%),
+      radial-gradient(1px 1px at 63% 33%, #fff5 50%, transparent 51%),
+      radial-gradient(1.5px 1.5px at 76% 58%, #fff7 50%, transparent 51%),
+      radial-gradient(1px 1px at 91% 27%, #fff6 50%, transparent 51%),
+      radial-gradient(1px 1px at 8% 72%, #fff5 50%, transparent 51%),
+      radial-gradient(1.5px 1.5px at 38% 84%, #fff6 50%, transparent 51%),
+      radial-gradient(ellipse at 15% -10%, #3b0764 0%, transparent 55%),
+      radial-gradient(ellipse at 100% 110%, #4c0519 0%, transparent 45%),
+      linear-gradient(180deg, #0d0820 0%, var(--color-crypt) 60%);
+  }
+
+  /* Slow drifting fog. */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: auto -20% -10% -20%;
+    height: 45vh;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse at 30% 60%, rgb(192 132 252 / 0.12), transparent 60%),
+      radial-gradient(ellipse at 70% 70%, rgb(163 230 53 / 0.06), transparent 55%);
+    filter: blur(20px);
+    animation: fog 26s ease-in-out infinite alternate;
+  }
+
+  ::selection {
+    background: rgb(192 132 252 / 0.45);
   }
 
   :focus-visible {
-    outline: 3px solid #facc15;
+    outline: 3px solid var(--color-candle);
     outline-offset: 3px;
   }
 }
 
 @layer components {
+  .font-spooky {
+    font-family: var(--font-spooky);
+    letter-spacing: 0.04em;
+    font-weight: 400;
+  }
+
+  .text-glow {
+    text-shadow:
+      0 0 18px rgb(250 204 21 / 0.45),
+      0 0 42px rgb(251 146 60 / 0.25);
+  }
+
+  .text-gradient {
+    background: linear-gradient(100deg, #fde68a 0%, #fb923c 45%, #f472b6 75%, #c084fc 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Glass card with a neon gradient border. */
   .card {
-    border-radius: 1.5rem;
-    border: 1px solid rgb(168 85 247 / 0.25);
-    background: rgb(15 23 42 / 0.75);
+    position: relative;
+    border-radius: 1.75rem;
+    border: 1px solid transparent;
     padding: 1.5rem;
-    box-shadow: 0 20px 50px -20px rgb(88 28 135 / 0.6);
+    background:
+      linear-gradient(160deg, rgb(24 16 44 / 0.88), rgb(12 8 24 / 0.92)) padding-box,
+      linear-gradient(135deg, rgb(192 132 252 / 0.55), rgb(251 146 60 / 0.25) 45%, rgb(163 230 53 / 0.18)) border-box;
+    box-shadow:
+      0 30px 80px -30px rgb(88 28 135 / 0.75),
+      inset 0 1px 0 rgb(255 255 255 / 0.06);
+    backdrop-filter: blur(14px);
+  }
+
+  .card-hover {
+    transition:
+      transform 200ms ease,
+      box-shadow 200ms ease;
+  }
+  .card-hover:hover {
+    transform: translateY(-3px);
+    box-shadow:
+      0 36px 90px -30px rgb(192 132 252 / 0.6),
+      inset 0 1px 0 rgb(255 255 255 / 0.08);
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    border-radius: 9999px;
+    border: 1px solid rgb(192 132 252 / 0.4);
+    background: rgb(88 28 135 / 0.35);
+    padding: 0.3rem 0.8rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #e9d5ff;
   }
 
   .btn {
+    position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 2.75rem;
+    gap: 0.5rem;
+    min-height: 2.9rem;
+    overflow: hidden;
     border-radius: 9999px;
-    padding: 0.5rem 1.25rem;
+    padding: 0.6rem 1.4rem;
     font-weight: 700;
+    letter-spacing: 0.01em;
     transition:
-      transform 120ms ease,
-      opacity 120ms ease;
+      transform 140ms ease,
+      box-shadow 200ms ease,
+      background-color 200ms ease,
+      opacity 140ms ease;
+  }
+  .btn:hover:not(:disabled) {
+    transform: translateY(-1px);
   }
   .btn:active:not(:disabled) {
     transform: scale(0.97);
@@ -52,51 +161,165 @@
     cursor: not-allowed;
     opacity: 0.5;
   }
+
   .btn-primary {
-    background: #facc15;
-    color: #1e1b4b;
+    background: linear-gradient(120deg, #fde047, #fb923c);
+    color: #1c0f2e;
+    box-shadow:
+      0 10px 30px -10px rgb(251 146 60 / 0.8),
+      inset 0 1px 0 rgb(255 255 255 / 0.5);
   }
+  .btn-primary:hover:not(:disabled) {
+    box-shadow:
+      0 14px 40px -10px rgb(251 146 60 / 0.95),
+      inset 0 1px 0 rgb(255 255 255 / 0.5);
+  }
+  /* A light sweep across primary buttons. */
+  .btn-primary::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(110deg, transparent 30%, rgb(255 255 255 / 0.55) 50%, transparent 70%);
+    transform: translateX(-120%);
+    animation: shine 3.2s ease-in-out infinite;
+  }
+
   .btn-ghost {
-    border: 1px solid rgb(203 213 225 / 0.5);
-    color: #f1f5f9;
+    border: 1px solid rgb(216 180 254 / 0.45);
+    background: rgb(255 255 255 / 0.04);
+    color: #f5f3ff;
   }
+  .btn-ghost:hover:not(:disabled) {
+    background: rgb(192 132 252 / 0.14);
+    box-shadow: 0 0 24px -6px rgb(192 132 252 / 0.7);
+  }
+
   .btn-danger {
-    background: #be123c;
+    background: linear-gradient(120deg, #e11d48, #9f1239);
     color: #fff;
+    box-shadow: 0 10px 28px -12px rgb(225 29 72 / 0.9);
   }
   .btn-success {
-    background: #047857;
+    background: linear-gradient(120deg, #059669, #047857);
     color: #fff;
+    box-shadow: 0 10px 28px -12px rgb(16 185 129 / 0.9);
+  }
+
+  .btn-xl {
+    min-height: 3.5rem;
+    padding: 0.8rem 2rem;
+    font-size: 1.1rem;
   }
 
   .input {
-    border-radius: 0.75rem;
-    border: 1px solid rgb(203 213 225 / 0.5);
-    background: #0f172a;
-    padding: 0.5rem 0.75rem;
+    border-radius: 0.9rem;
+    border: 1px solid rgb(216 180 254 / 0.45);
+    background: rgb(10 6 20 / 0.8);
+    padding: 0.55rem 0.8rem;
     color: #f8fafc;
+  }
+  .input:focus-visible {
+    box-shadow: 0 0 0 4px rgb(250 204 21 / 0.25);
+  }
+
+  /* Accessible toggle switch built on a real checkbox. */
+  .switch {
+    appearance: none;
+    position: relative;
+    width: 2.6rem;
+    height: 1.5rem;
+    flex: none;
+    cursor: pointer;
+    border-radius: 9999px;
+    border: 1px solid rgb(216 180 254 / 0.5);
+    background: rgb(255 255 255 / 0.08);
+    transition: background-color 200ms ease;
+  }
+  .switch::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0.2rem;
+    width: 1.05rem;
+    height: 1.05rem;
+    border-radius: 9999px;
+    background: #e9d5ff;
+    translate: 0 -50%;
+    transition: translate 200ms ease;
+  }
+  .switch:checked {
+    background: linear-gradient(120deg, #a855f7, #f97316);
+  }
+  .switch:checked::before {
+    translate: 1.05rem -50%;
+    background: #fff;
+  }
+
+  .stat-pill {
+    border-radius: 1.1rem;
+    border: 1px solid rgb(255 255 255 / 0.08);
+    background: rgb(255 255 255 / 0.04);
+    padding: 0.45rem 0.9rem;
+  }
+
+  .hp-bar {
+    position: relative;
+    height: 1.1rem;
+    overflow: hidden;
+    border-radius: 9999px;
+    border: 1px solid rgb(255 255 255 / 0.1);
+    background: rgb(0 0 0 / 0.45);
+  }
+  .hp-fill {
+    height: 100%;
+    transform-origin: left;
+    background: linear-gradient(90deg, #f43f5e, #fb923c 55%, #facc15);
+    box-shadow: 0 0 22px rgb(251 146 60 / 0.8);
+    transition: transform 350ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  /* Graveyard arena backdrop. */
+  .arena {
+    position: relative;
+    overflow: hidden;
+    border-radius: 1.5rem;
+    border: 1px solid rgb(192 132 252 / 0.25);
+    background:
+      /* A small, cool-toned moon so it never looks like the golden weak spot. */
+      radial-gradient(
+        circle at 8% 14%,
+        rgb(203 213 225 / 0.5) 0 1.1rem,
+        rgb(148 163 184 / 0.16) 1.2rem,
+        transparent 3.5rem
+      ),
+      radial-gradient(ellipse at 50% 120%, rgb(163 230 53 / 0.18), transparent 60%),
+      linear-gradient(180deg, #1a0f33 0%, #2a1250 55%, #12081f 100%);
   }
 
   .weak-spot {
-    background: radial-gradient(circle, #fde68a 0%, #f59e0b 70%);
-    box-shadow: 0 0 0 6px rgb(250 204 21 / 0.35);
+    background: radial-gradient(circle at 35% 30%, #fff7cc 0%, #facc15 45%, #f97316 100%);
+    box-shadow:
+      0 0 0 6px rgb(250 204 21 / 0.28),
+      0 0 30px 6px rgb(250 204 21 / 0.55);
     animation: pulse 0.8s ease-in-out infinite alternate;
   }
 
   .weak-spot-tap {
-    background: radial-gradient(circle, #fde68a 0%, #f59e0b 70%);
-    box-shadow: 0 0 0 10px rgb(250 204 21 / 0.25);
+    background: radial-gradient(circle at 35% 30%, #fff7cc 0%, #facc15 45%, #f97316 100%);
+    box-shadow:
+      0 0 0 12px rgb(250 204 21 / 0.2),
+      0 0 60px 12px rgb(250 204 21 / 0.45);
   }
   .weak-spot-tap:active {
     scale: 0.94;
   }
 
   .story-panel {
-    border: 2px solid rgb(250 204 21 / 0.7);
-    background: rgb(30 27 46 / 0.96);
+    border: 2px solid rgb(250 204 21 / 0.75);
+    background: rgb(22 14 40 / 0.96);
     box-shadow:
-      4px 4px 0 rgb(250 204 21 / 0.35),
-      0 12px 30px -12px rgb(0 0 0 / 0.8);
+      5px 5px 0 rgb(250 204 21 / 0.35),
+      0 16px 40px -14px rgb(0 0 0 / 0.9);
   }
 
   .timer-bar {
@@ -108,16 +331,20 @@
   }
 
   .spinner {
-    width: 3rem;
-    height: 3rem;
+    width: 3.25rem;
+    height: 3.25rem;
     border-radius: 9999px;
-    border: 4px solid rgb(168 85 247 / 0.3);
-    border-top-color: #facc15;
+    border: 4px solid rgb(168 85 247 / 0.25);
+    border-top-color: var(--color-candle);
+    border-right-color: var(--color-pumpkin);
     animation: spin 0.9s linear infinite;
   }
 
   .float {
-    animation: float 3s ease-in-out infinite;
+    animation: float 3.2s ease-in-out infinite;
+  }
+  .flicker {
+    animation: flicker 5s linear infinite;
   }
 
   .skip-link {
@@ -126,7 +353,7 @@
     top: -4rem;
     z-index: 50;
     border-radius: 0.5rem;
-    background: #facc15;
+    background: var(--color-candle);
     padding: 0.5rem 1rem;
     color: #1e1b4b;
     font-weight: 700;
@@ -165,7 +392,40 @@
 }
 @keyframes float {
   50% {
-    transform: translateY(-10px);
+    transform: translateY(-12px);
+  }
+}
+@keyframes shine {
+  0%,
+  60% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
+}
+@keyframes fog {
+  from {
+    transform: translateX(-4%);
+  }
+  to {
+    transform: translateX(4%);
+  }
+}
+@keyframes flicker {
+  0%,
+  92%,
+  100% {
+    opacity: 1;
+  }
+  93% {
+    opacity: 0.55;
+  }
+  95% {
+    opacity: 1;
+  }
+  96% {
+    opacity: 0.7;
   }
 }
 

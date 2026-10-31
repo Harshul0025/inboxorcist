@@ -78,7 +78,7 @@ export default function RaidPlayer({ code, onExit }: { code: string; onExit: () 
   if (stage !== 'joined' || !conn) {
     return (
       <section aria-labelledby="join-heading" className="card mx-auto max-w-md">
-        <h2 id="join-heading" className="text-2xl font-black">
+        <h2 id="join-heading" className="font-spooky text-gradient text-4xl">
           {strings.raid.joinHeading} <span className="tracking-[0.3em] text-amber-200">{code}</span>
         </h2>
         <form className="mt-4 flex flex-col gap-3" onSubmit={join}>
@@ -155,7 +155,7 @@ function PlayerStage({
     case 'ended':
       return (
         <section className="card mx-auto max-w-md text-center">
-          <h2 className="text-3xl font-black text-amber-200">{strings.raid.ended}</h2>
+          <h2 className="font-spooky text-gradient text-5xl">{strings.raid.ended}</h2>
           {room.stats && <p className="mt-2 text-lg">{strings.boss.cleared(room.stats.cleared)}</p>}
           <ol className="mt-4 space-y-1 text-left">
             {rankMvps(room.players, room.taps).map((mvp, position) => (
@@ -199,11 +199,8 @@ function TapPad({ conn, code, room }: { conn: RaidConnection; code: string; room
   return (
     <section className="mx-auto flex max-w-md flex-col items-center gap-4 text-center">
       {boss && <p className="text-lg text-slate-200">{boss.summary}</p>}
-      <div className="h-4 w-full overflow-hidden rounded-full bg-slate-800" aria-hidden="true">
-        <div
-          className="h-full origin-left bg-gradient-to-r from-rose-500 to-amber-400 transition-transform duration-300"
-          style={{ transform: `scaleX(${percent / 100})` }}
-        />
+      <div className="hp-bar w-full" aria-hidden="true">
+        <div className="hp-fill" style={{ transform: `scaleX(${percent / 100})` }} />
       </div>
       {boss && <p className="tabular-nums">{strings.boss.hpValue(boss.hp, boss.maxHp)}</p>}
       <button
@@ -252,7 +249,7 @@ function VotePad({ conn, code, room }: { conn: RaidConnection; code: string; roo
 
   return (
     <section aria-labelledby="player-vote" className="card mx-auto max-w-md text-center">
-      <h2 id="player-vote" className="text-3xl font-black">
+      <h2 id="player-vote" className="font-spooky text-gradient text-5xl">
         {strings.raid.voteHeading}
       </h2>
       <p className="mt-2 text-lg">{vote.summary}</p>

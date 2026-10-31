@@ -27,6 +27,7 @@ export const strings = {
     connecting: 'Opening Google sign-in…',
     connectFailed: 'Google sign-in was cancelled or failed. Please try again.',
     raidTitle: 'Raid night',
+    raidChip: 'Multiplayer',
     raidBody: 'Everyone in the room joins from their phone and cleans one inbox together.',
     raidDemoCta: 'Host a demo raid',
     raidGmailCta: 'Host a Gmail raid',
@@ -34,6 +35,30 @@ export const strings = {
     joinTitle: 'Join a raid',
     joinLabel: 'Room code',
     joinCta: 'Join',
+    badge: 'PromptWars × OUTLIER’2026 · Powered by Gemini',
+    howHeading: 'How the exorcism works',
+    steps: [
+      {
+        icon: '🔮',
+        title: 'Gemini reads the haunting',
+        body: 'It groups your unread mail by sender and turns the noisiest ones into bosses with names, taunts and last words.',
+      },
+      {
+        icon: '⚔️',
+        title: 'Every hit is a real action',
+        body: 'Each strike marks a chunk of that sender’s mail read and archives it in Gmail. The HP bar only drops when Gmail confirms.',
+      },
+      {
+        icon: '🪦',
+        title: 'Nothing dies for real',
+        body: 'Important mail can only be rescued, nothing is ever deleted, and one click resurrects the whole run.',
+      },
+    ],
+    stats: [
+      { value: '2,000', label: 'ghosts in the demo inbox' },
+      { value: '0', label: 'emails ever deleted' },
+      { value: '1 click', label: 'to undo everything' },
+    ],
     safety:
       'Safety: nothing is trashed. Banished mail is archived with a run label, important mail can only be rescued, and Resurrect restores everything.',
   },

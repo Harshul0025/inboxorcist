@@ -76,9 +76,10 @@ export function StoryProvider({ children }: { children: ReactNode }) {
             <motion.div
               key={entry.id}
               layout={!reducedMotion}
-              initial={reducedMotion ? false : { opacity: 0, x: 40, rotate: 2 }}
-              animate={{ opacity: 1, x: 0, rotate: 0 }}
-              exit={reducedMotion ? { opacity: 0 } : { opacity: 0, x: 40 }}
+              // Slide in without fading so text is at full contrast from the first frame.
+              initial={reducedMotion ? false : { x: -48, rotate: -2, scale: 0.96 }}
+              animate={{ x: 0, rotate: 0, scale: 1 }}
+              exit={reducedMotion ? { opacity: 0 } : { x: '-120%' }}
               transition={{ duration: 0.25 }}
               className="story-panel flex w-full items-start gap-3 rounded-2xl p-3"
               data-testid="story-toast"

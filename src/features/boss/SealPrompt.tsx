@@ -50,7 +50,7 @@ export function SealPrompt({ boss, adapter, runId, onDone }: SealPromptProps) {
       aria-labelledby="seal-heading"
       className="card mx-auto max-w-lg text-center"
     >
-      <h2 id="seal-heading" className="text-2xl font-bold">
+      <h2 id="seal-heading" className="font-spooky text-gradient text-5xl">
         {strings.seal.heading}
       </h2>
       <p className="sensitive mt-1 font-semibold text-amber-200">{boss.bossName}</p>

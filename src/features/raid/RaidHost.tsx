@@ -126,7 +126,11 @@ function RaidSession({ adapter, plan, totalUnread, categories, onExit, onAgain }
     };
   }, [conn, code]);
 
+  // Once a run is ending, late callbacks (a seal or vote finishing after "End run") must not resume it.
+  const ending = useRef(false);
   const finish = useCallback(async () => {
+    if (ending.current) return;
+    ending.current = true;
     const unreadAfter = await adapter.unreadCount().catch(() => counter.count);
     const totals = executor.totals;
     const durationMs = Date.now() - startedAt.current;
@@ -150,6 +154,7 @@ function RaidSession({ adapter, plan, totalUnread, categories, onExit, onAgain }
   }, [adapter, code, conn, counter.count, executor, scoreboard.bestCombo, scoreboard.score, totalUnread]);
 
   const next = useCallback(() => {
+    if (ending.current) return;
     counter.refresh();
     if (stepIndex + 1 >= steps.length) {
       void finish();
@@ -292,7 +297,7 @@ export function Lobby({ code, names, onStart }: { code: string; names: string[];
   return (
     <section aria-labelledby="lobby-heading" className="card grid gap-6 md:grid-cols-2">
       <div className="text-center">
-        <h2 id="lobby-heading" className="text-3xl font-black">
+        <h2 id="lobby-heading" className="font-spooky text-gradient text-5xl">
           {strings.raid.hostHeading}
         </h2>
         <p className="mt-2 text-slate-300">{strings.raid.joinUrl}</p>
@@ -412,7 +417,7 @@ export function RaidBossStage({
 
   return (
     <section aria-labelledby="raid-boss" className="card text-center">
-      <h2 id="raid-boss" className="sensitive text-4xl font-black text-amber-200">
+      <h2 id="raid-boss" className="sensitive font-spooky text-gradient text-glow text-5xl sm:text-6xl">
         {boss.bossName}
       </h2>
       <p className="mt-1 text-lg text-slate-300">{boss.summary}</p>
@@ -426,12 +431,9 @@ export function RaidBossStage({
         aria-valuemax={engine.maxHp}
         aria-valuenow={engine.hp}
         aria-valuetext={strings.boss.hpValue(engine.hp, engine.maxHp)}
-        className="mt-4 h-5 overflow-hidden rounded-full bg-slate-800"
+        className="hp-bar mt-4"
       >
-        <div
-          className="h-full origin-left bg-gradient-to-r from-rose-500 to-amber-400 transition-transform duration-300"
-          style={{ transform: `scaleX(${percent / 100})` }}
-        />
+        <div className="hp-fill" style={{ transform: `scaleX(${percent / 100})` }} />
       </div>
       <p className="mt-2 tabular-nums" data-testid="boss-hp">
         {strings.boss.hpValue(engine.hp, engine.maxHp)}
@@ -505,7 +507,7 @@ export function RaidVoteStage({ ghost, voteId, executor, conn, code, room, onDon
   const live = tallyVotes(room.votes?.[voteId]);
   return (
     <section aria-labelledby="vote-heading" className="card text-center">
-      <h2 id="vote-heading" className="text-4xl font-black">
+      <h2 id="vote-heading" className="font-spooky text-gradient text-6xl">
         {strings.raid.voteHeading}
       </h2>
       <p className="mt-2 text-xl text-slate-200">{ghost.summary}</p>

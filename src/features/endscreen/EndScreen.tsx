@@ -94,22 +94,30 @@ export function EndScreen({ stats, adapter, runId, categories, mvps, onHome, onA
 
   return (
     <section aria-labelledby="end-heading" className="card">
-      <h2 id="end-heading" ref={headingRef} tabIndex={-1} className="text-center text-3xl font-black text-amber-200">
+      <h2
+        id="end-heading"
+        ref={headingRef}
+        tabIndex={-1}
+        className="font-spooky text-gradient text-glow text-center text-5xl sm:text-7xl"
+      >
         {strings.end.heading}
       </h2>
       <p className="mt-1 text-center text-slate-300">{strings.end.saved(minutesSaved)}</p>
 
       <dl className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
         {tiles.map(([label, value]) => (
-          <div key={label} className="rounded-2xl bg-slate-900 p-3">
-            <dt className="text-xs uppercase tracking-wide text-slate-400">{label}</dt>
-            <dd className="text-xl font-bold tabular-nums">{value}</dd>
+          <div key={label} className="stat-pill !p-4">
+            <dt className="text-[0.65rem] font-semibold tracking-[0.18em] text-violet-200/80 uppercase">{label}</dt>
+            <dd className="mt-1 text-2xl font-bold text-white tabular-nums">{value}</dd>
           </div>
         ))}
       </dl>
 
-      <div className="mt-5 rounded-2xl border border-purple-400/30 bg-purple-950/40 p-4">
-        <h3 className="font-semibold text-purple-200">{strings.end.roastHeading}</h3>
+      <div className="mt-6 rounded-3xl border-2 border-amber-300/60 bg-violet-950/60 p-5 shadow-[5px_5px_0_rgb(250_204_21/0.3)]">
+        <h3 className="font-spooky text-2xl text-amber-200">
+          <span aria-hidden="true">🔥 </span>
+          {strings.end.roastHeading}
+        </h3>
         {roast ? (
           <div data-testid="roast" className="mt-1 space-y-1 text-slate-100">
             <p>{roast.lines[0]}</p>
