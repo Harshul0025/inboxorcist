@@ -41,6 +41,10 @@ export interface SenderVerdict {
   taunt: string;
   /** Privacy-safe description with no names or subjects, shown to raid players. */
   summary: string;
+  /** What the boss begs at half health (storyboard notification). */
+  plea: string;
+  /** One-liner shown when the boss is defeated (storyboard notification). */
+  epitaph: string;
 }
 
 export interface Proposal {

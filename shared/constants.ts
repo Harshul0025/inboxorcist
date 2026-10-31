@@ -44,6 +44,12 @@ export const GHOST_MIN_TIME_MS = 2_500;
 export const GHOST_TIME_STEP_MS = 350;
 export const SWIPE_THRESHOLD_PX = 90;
 
+// Storyboard notifications
+export const STORY_TOAST_MS = 4_500;
+export const STORY_MAX_VISIBLE = 2;
+/** Chance that an ordinary ghost decision gets a story line (keeps the feed from getting spammy). */
+export const STORY_CHATTER_CHANCE = 0.3;
+
 // Scoring
 export const POINTS_PER_EMAIL = 10;
 export const POINTS_PER_DECISION = 25;
@@ -78,6 +84,8 @@ export const API_RATE_LIMIT_PER_MIN = 60;
 export const UNSUBSCRIBE_RATE_LIMIT_PER_MIN = 20;
 export const UNSUBSCRIBE_TIMEOUT_MS = 5_000;
 export const BOSS_NAME_MAX = 60;
+export const PLEA_MAX = 110;
+export const EPITAPH_MAX = 130;
 export const TAUNT_MAX = 160;
 export const ROAST_LINE_MAX = 160;
 export const DRAFT_MAX = 1_200;

@@ -2,6 +2,8 @@ import { z } from 'zod';
 import {
   BOSS_NAME_MAX,
   DRAFT_MAX,
+  EPITAPH_MAX,
+  PLEA_MAX,
   PROPOSE_MAX_GROUPS,
   PROPOSE_MAX_SAMPLES,
   RAID_SUMMARY_MAX,
@@ -44,6 +46,8 @@ export const senderVerdictSchema = z.object({
   bossName: z.string().min(1).max(BOSS_NAME_MAX),
   taunt: z.string().min(1).max(TAUNT_MAX),
   summary: z.string().min(1).max(RAID_SUMMARY_MAX),
+  plea: z.string().min(1).max(PLEA_MAX),
+  epitaph: z.string().min(1).max(EPITAPH_MAX),
 });
 
 export const proposalSchema = z.object({

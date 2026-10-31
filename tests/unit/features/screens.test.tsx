@@ -29,6 +29,8 @@ const boss: BossSpec = {
   taunt: 'Biryani?',
   summary: 'Food delivery promotions',
   category: 'Food',
+  plea: 'Wait! 70% off!',
+  epitaph: 'Here lies Swiggy.',
   estimatedHp: 40,
   unsubscribeUrl: 'https://u.example/x',
 };

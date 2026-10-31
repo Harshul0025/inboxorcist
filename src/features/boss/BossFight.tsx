@@ -9,10 +9,12 @@ import {
 import type { ChoreAdapter } from '../../adapters/types';
 import { useAnnounce } from '../../app/announcer';
 import { useSettings } from '../../app/settings';
+import { useStory } from '../../app/story';
 import { GhostSprite } from '../../components/GhostSprite';
 import type { BossSpec } from '../../lib/encounters';
 import type { RunExecutor } from '../../lib/executor';
 import { playSound } from '../../lib/sound';
+import { storyLines } from '../../lib/story';
 import { strings } from '../../strings';
 import { useBossEngine } from './useBossEngine';
 
@@ -56,6 +58,7 @@ export function BossFight({
 }: BossFightProps) {
   const { reducedMotion, sound } = useSettings();
   const announce = useAnnounce();
+  const tell = useStory();
   const clearedRef = useRef(0);
   const [shake, setShake] = useState(0);
   const [spawn, setSpawn] = useState(0);
@@ -115,6 +118,15 @@ export function BossFight({
     };
   }, [engine.status, onMiss, sound, spot.key, strike]);
 
+  const pleaded = useRef(false);
+  useEffect(() => {
+    if (pleaded.current || engine.status !== 'fighting' || engine.maxHp === 0) return;
+    if (engine.hp > 0 && engine.hp <= engine.maxHp / 2) {
+      pleaded.current = true;
+      tell(storyLines.bossPlea(boss.bossName, boss.plea));
+    }
+  }, [boss.bossName, boss.plea, engine.hp, engine.maxHp, engine.status, tell]);
+
   const finished = useRef(false);
   useEffect(() => {
     if (finished.current) return;
@@ -122,9 +134,10 @@ export function BossFight({
       finished.current = true;
       if (sound) playSound('defeat');
       announce(strings.boss.defeated(boss.bossName), 'assertive');
+      tell(storyLines.bossDefeated(boss.epitaph));
       onDefeated(clearedRef.current);
     }
-  }, [announce, boss.bossName, engine.status, onDefeated, sound]);
+  }, [announce, boss.bossName, boss.epitaph, engine.status, onDefeated, sound, tell]);
 
   const percent = engine.maxHp > 0 ? (engine.hp / engine.maxHp) * 100 : 0;
 

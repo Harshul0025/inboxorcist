@@ -1,4 +1,4 @@
-import { BOSS_NAME_MAX, RAID_SUMMARY_MAX, TAUNT_MAX } from './constants.js';
+import { BOSS_NAME_MAX, EPITAPH_MAX, PLEA_MAX, RAID_SUMMARY_MAX, TAUNT_MAX } from './constants.js';
 import { hashString, truncate } from './text.js';
 import type { ChoreAction, Proposal, SenderGroup, SenderVerdict } from './types.js';
 
@@ -130,6 +130,42 @@ export function tauntFor(group: SenderGroup): string {
   return truncate(line, TAUNT_MAX);
 }
 
+const PLEAS = [
+  'Wait! I can give you 70% off if you let me live!',
+  'Please! I only emailed you {count} times… this week.',
+  "I can change! I'll only email you twice a day. Maybe thrice.",
+  'Noooo! Who will remind you about offers you never wanted?',
+  "Spare me and I'll unsubscribe myself. (I won't.)",
+] as const;
+
+const EPITAPHS = [
+  'Here lies {name}. It sent {count} emails and got zero replies.',
+  '{name} has left the chat. Your inbox can finally breathe.',
+  '{name} has been exorcised. {count} fewer emails to feel guilty about.',
+  'RIP {name}. Gone, but its unsubscribe link lives on.',
+  '{name} has been archived into the shadow realm. Nobody will check on it.',
+] as const;
+
+function fill(template: string, group: SenderGroup): string {
+  return template.replace('{name}', group.senderName.trim() || 'The ghost').replace('{count}', String(group.count));
+}
+
+/**
+ * Funny line a boss begs with at half health.
+ * @param group Sampled mail from one sender.
+ */
+export function pleaFor(group: SenderGroup): string {
+  return truncate(fill(PLEAS[hashString(group.sender) % PLEAS.length] ?? PLEAS[0], group), PLEA_MAX);
+}
+
+/**
+ * Funny one-liner shown when a boss is defeated.
+ * @param group Sampled mail from one sender.
+ */
+export function epitaphFor(group: SenderGroup): string {
+  return truncate(fill(EPITAPHS[hashString(group.senderName) % EPITAPHS.length] ?? EPITAPHS[0], group), EPITAPH_MAX);
+}
+
 /**
  * Classifies one sender with keyword rules. This is the offline fallback used
  * when Gemini is unavailable, so the game never breaks.
@@ -146,6 +182,8 @@ export function classifySender(group: SenderGroup): SenderVerdict {
     sender: group.sender,
     bossName: bossNameFor(group.senderName),
     taunt: tauntFor(group),
+    plea: pleaFor(group),
+    epitaph: epitaphFor(group),
   };
 
   if (rule) {

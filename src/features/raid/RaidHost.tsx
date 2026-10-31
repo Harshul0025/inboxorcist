@@ -14,7 +14,9 @@ import type { BossSpec, EncounterPlan, GhostSpec } from '../../lib/encounters';
 import { createRunId, RunExecutor } from '../../lib/executor';
 import { formatCount } from '../../lib/scoring';
 import { playSound } from '../../lib/sound';
+import { storyLines } from '../../lib/story';
 import { useSettings } from '../../app/settings';
+import { useStory } from '../../app/story';
 import { strings } from '../../strings';
 import { useBossEngine } from '../boss/useBossEngine';
 import { EndScreen } from '../endscreen/EndScreen';
@@ -78,6 +80,7 @@ interface RaidSessionProps extends RaidHostProps {
 function RaidSession({ adapter, plan, totalUnread, categories, onExit, onAgain }: RaidSessionProps) {
   const { config } = useServices();
   const announce = useAnnounce();
+  const tell = useStory();
   const [conn, setConn] = useState<RaidConnection | null>(null);
   const [code, setCode] = useState<string | null>(null);
   const [room, setRoom] = useState<RoomState | null>(null);
@@ -223,6 +226,7 @@ function RaidSession({ adapter, plan, totalUnread, categories, onExit, onAgain }
           onStart={() => {
             startedAt.current = Date.now();
             announce(strings.raid.bossPrompt);
+            tell(storyLines.runStart(totalUnread));
             next();
           }}
         />
@@ -354,6 +358,7 @@ export function RaidBossStage({
   onDone,
 }: RaidBossStageProps) {
   const { sound } = useSettings();
+  const tell = useStory();
   const cleared = useRef(0);
   const baseline = useRef<number | null>(null);
   const hitsDone = useRef(0);
@@ -384,14 +389,24 @@ export function RaidBossStage({
     hitsDone.current += earned;
   }, [engine, paused, totalTaps]);
 
+  const pleaded = useRef(false);
+  useEffect(() => {
+    if (pleaded.current || engine.status !== 'fighting' || engine.maxHp === 0) return;
+    if (engine.hp > 0 && engine.hp <= engine.maxHp / 2) {
+      pleaded.current = true;
+      tell(storyLines.bossPlea(boss.bossName, boss.plea));
+    }
+  }, [boss.bossName, boss.plea, engine.hp, engine.maxHp, engine.status, tell]);
+
   const done = useRef(false);
   useEffect(() => {
     if (done.current) return;
     if (engine.status === 'defeated' || engine.status === 'empty') {
       done.current = true;
+      if (engine.status === 'defeated') tell(storyLines.bossDefeated(boss.epitaph));
       onDone(cleared.current);
     }
-  }, [engine.status, onDone]);
+  }, [boss.epitaph, engine.status, onDone, tell]);
 
   const percent = engine.maxHp > 0 ? (engine.hp / engine.maxHp) * 100 : 0;
 

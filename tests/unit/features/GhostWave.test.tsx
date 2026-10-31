@@ -63,7 +63,7 @@ describe('GhostWave', () => {
     fireEvent.keyDown(window, { key: 'ArrowUp' });
     fireEvent.keyDown(window, { key: 'Enter' });
     expect(apply.mock.calls.map((c) => c[0])).toEqual(['banish', 'keep', 'rescue']);
-    expect(onDecision).toHaveBeenCalledWith('banish', false);
+    expect(onDecision).toHaveBeenCalledWith('banish', false, expect.objectContaining({ suggestion: 'banish' }));
     expect(onComplete).toHaveBeenCalledTimes(1);
     await vi.waitFor(() => {
       expect(onRescued).toHaveBeenCalledTimes(1);
@@ -97,7 +97,7 @@ describe('GhostWave', () => {
     act(() => {
       vi.advanceTimersByTime(6000);
     });
-    expect(onDecision).toHaveBeenCalledWith('keep', true);
+    expect(onDecision).toHaveBeenCalledWith('keep', true, expect.objectContaining({ isImportant: false }));
     expect(apply).toHaveBeenCalledWith('keep', ['a']);
     expect(screen.getByText('Subject b')).toBeInTheDocument();
   });
