@@ -10,7 +10,7 @@ interface DemoSender {
 }
 
 /** Bulk senders that make up the haunted demo inbox. */
-const BULK_SENDERS: readonly DemoSender[] = [
+const BULK_SENDERS: readonly [DemoSender, ...DemoSender[]] = [
   {
     name: 'Swiggy',
     email: 'offers@swiggy.in',
@@ -261,7 +261,8 @@ export function generateDemoInbox(total: number = DEMO_TOTAL_EMAILS, seed: numbe
       roll -= sender.weight;
       if (roll <= 0) return sender;
     }
-    return BULK_SENDERS[BULK_SENDERS.length - 1] as DemoSender;
+    // Unreachable for random() < 1, but keeps the function total.
+    return BULK_SENDERS[0];
   };
   const emails: EmailItem[] = [];
   for (let i = special.length; i < total; i += 1) {

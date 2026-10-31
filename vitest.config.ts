@@ -27,17 +27,10 @@ export default mergeConfig(
       coverage: {
         provider: 'v8',
         include: ['src/**/*.{ts,tsx}', 'shared/**/*.ts', 'server/**/*.ts'],
-        exclude: [
-          // Entry points that only wire real dependencies together.
-          'src/main.tsx',
-          'server/index.ts',
-          // Thin wrappers around the Firebase SDK, covered by the rules tests and Playwright raid e2e.
-          'src/lib/firebaseApp.ts',
-          'src/features/raid/raidService.ts',
-          '**/*.d.ts',
-        ],
+        // Only the two entry points that just wire real dependencies together are excluded.
+        exclude: ['src/main.tsx', 'server/index.ts', '**/*.d.ts'],
         reporter: ['text', 'html', 'json-summary'],
-        thresholds: { lines: 80, functions: 80, statements: 80, branches: 75 },
+        thresholds: { lines: 90, functions: 90, statements: 90, branches: 85 },
       },
     },
   }),

@@ -99,8 +99,9 @@ function clampText(value: unknown, max: number, fallback = ''): string {
 }
 
 function clampVerdict(raw: unknown, rules: ReadonlyMap<string, SenderVerdict>): SenderVerdict | null {
-  if (typeof raw !== 'object' || raw === null) return null;
-  const record = raw as Record<string, unknown>;
+  const parsedRecord = z.record(z.string(), z.unknown()).safeParse(raw);
+  if (!parsedRecord.success) return null;
+  const record = parsedRecord.data;
   const rule = typeof record.sender === 'string' ? rules.get(record.sender) : undefined;
   const candidate = {
     ...record,

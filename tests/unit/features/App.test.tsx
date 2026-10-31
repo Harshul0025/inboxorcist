@@ -40,11 +40,14 @@ describe('App', () => {
 
   it('toggles streamer mode and sound, persisting the choice', () => {
     renderApp();
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Streamer mode' }));
+    fireEvent.click(screen.getByRole('switch', { name: 'Streamer mode' }));
     expect(document.documentElement).toHaveClass('streamer');
     expect(localStorage.getItem('inboxorcist.streamer')).toBe('true');
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Sound' }));
+    fireEvent.click(screen.getByRole('switch', { name: 'Sound' }));
     expect(localStorage.getItem('inboxorcist.sound')).toBe('false');
+    expect(screen.getByRole('switch', { name: 'Streamer mode' })).toHaveAccessibleDescription(
+      'Blurs senders and subjects for projectors and screen shares.',
+    );
   });
 
   it('connects Gmail and reports a cancelled sign-in', async () => {

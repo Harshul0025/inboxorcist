@@ -47,8 +47,11 @@ export interface TokenManager {
   revoke(): void;
 }
 
-interface Window {
-  google?: { accounts?: { oauth2?: GisOauth2 } };
+declare global {
+  interface Window {
+    /** Set by the Google Identity Services script once it loads. */
+    google?: { accounts?: { oauth2?: GisOauth2 } };
+  }
 }
 
 /**
@@ -56,8 +59,7 @@ interface Window {
  * resolves its OAuth 2 API.
  */
 export function loadGisOauth2(): Promise<GisOauth2> {
-  const win = window as unknown as Window;
-  const existing = win.google?.accounts?.oauth2;
+  const existing = window.google?.accounts?.oauth2;
   if (existing) return Promise.resolve(existing);
   return new Promise((resolve, reject) => {
     const script = document.createElement('script');
@@ -66,7 +68,7 @@ export function loadGisOauth2(): Promise<GisOauth2> {
     const nonce = document.querySelector<HTMLMetaElement>('meta[property="csp-nonce"]')?.nonce;
     if (nonce) script.nonce = nonce;
     script.onload = () => {
-      const oauth2 = win.google?.accounts?.oauth2;
+      const oauth2 = window.google?.accounts?.oauth2;
       if (oauth2) resolve(oauth2);
       else reject(new AuthError('Google sign-in failed to load'));
     };

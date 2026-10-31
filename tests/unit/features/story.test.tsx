@@ -74,7 +74,7 @@ describe('StoryProvider', () => {
       expect(screen.getAllByTestId('story-toast')).toHaveLength(STORY_MAX_VISIBLE);
     });
     expect(screen.queryByText('Line 0')).not.toBeInTheDocument();
-    expect(screen.getByRole('region', { name: 'Story' })).toHaveAttribute('aria-live', 'polite');
+    expect(screen.getByRole('log', { name: 'Story' })).toHaveAttribute('aria-live', 'polite');
     act(() => {
       vi.advanceTimersByTime(STORY_TOAST_MS + 500);
     });

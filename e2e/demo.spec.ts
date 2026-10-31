@@ -25,7 +25,7 @@ test('a demo run really clears mail, seals a sender and can be fully undone', as
 
 test('streamer mode blurs senders and subjects', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('checkbox', { name: 'Streamer mode' }).check();
+  await page.getByRole('switch', { name: 'Streamer mode' }).check();
   await page.getByRole('button', { name: 'Play demo' }).click();
   const bossName = page.locator('.sensitive').first();
   await expect(bossName).toBeVisible();

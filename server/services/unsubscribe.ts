@@ -80,13 +80,18 @@ export function parseSafeUrl(raw: string): URL {
 type LookupCallback = (error: NodeJS.ErrnoException | null, address: string, family: number) => void;
 export type LookupFn = (hostname: string, options: dns.LookupOptions, callback: LookupCallback) => void;
 
+/** The operating system resolver, always returning a single address. */
+function systemLookup(hostname: string, options: dns.LookupOptions, callback: LookupCallback): void {
+  dns.lookup(hostname, { family: options.family ?? 0, hints: options.hints ?? 0, all: false }, callback);
+}
+
 /**
  * Wraps a DNS lookup so every resolved address is checked at connect time.
  * Validating inside the lookup closes the DNS-rebinding gap between
  * "check" and "connect".
- * @param lookup Underlying resolver, defaults to `dns.lookup`.
+ * @param lookup Underlying resolver, defaults to the system resolver.
  */
-export function createSafeLookup(lookup: LookupFn = dns.lookup as unknown as LookupFn): LookupFn {
+export function createSafeLookup(lookup: LookupFn = systemLookup): LookupFn {
   return (hostname, options, callback) => {
     lookup(hostname, { ...options, all: false }, (error, address, family) => {
       if (error) {

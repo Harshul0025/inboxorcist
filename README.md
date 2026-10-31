@@ -65,7 +65,9 @@ The access token lives in browser memory only. It is never stored and never sent
 
 ## Security
 
-- Strict **Content Security Policy** with a per-request nonce and `'strict-dynamic'`; `object-src 'none'`, `frame-ancestors 'none'`, HSTS, `X-Frame-Options: DENY`, and COOP `same-origin-allow-popups` (needed for the Google sign-in popup).
+- Strict **Content Security Policy** with a per-request nonce and `'strict-dynamic'`, no `unsafe-inline` or `unsafe-eval` anywhere (`style-src-attr 'none'`), `object-src 'none'` and `frame-ancestors 'none'`. Also HSTS, `X-Frame-Options: DENY`, a restrictive `Permissions-Policy` (camera, microphone, geolocation, payment and so on all off) and COOP `same-origin-allow-popups` (needed for the Google sign-in popup).
+- **Untrusted data is validated everywhere:** API bodies, Gemini output and Firebase room snapshots all go through zod schemas before use.
+- Dependabot keeps npm and Actions dependencies patched. See [SECURITY.md](SECURITY.md) for the reporting policy.
 - **CSRF / CORS:** state-changing API calls from other origins get a 403, and no CORS headers are ever sent.
 - **Input validation** with zod on every endpoint, a 64 kB body limit, and **rate limiting** (60/min for the API, 20/min for unsubscribe).
 - **SSRF protection** for one-click unsubscribe: HTTPS only, default port, no credentials, and every DNS answer checked against private and reserved ranges _at connect time_ (no DNS-rebinding gap). Redirects are not followed and the timeout is 5 s.
@@ -109,10 +111,11 @@ flowchart LR
 `ChoreAdapter` (`scan`, `apply`, `undo`, `seal`, `createDraft`) is the plug-in point: a Drive, Downloads-folder or expenses adapter would plug into the same game.
 
 ```
-server/            Express API, security middleware, Gemini game master, SSRF-safe unsubscribe
+server/            Express app (app.ts), /api router (routes/), security, logging and error middleware,
+                   Gemini game master, SSRF-safe unsubscribe, static client with CSP nonces
 shared/            Types, zod schemas, constants, rule-based classifier (used by client and server)
 src/adapters/      ChoreAdapter, GmailAdapter, Gmail REST client, Google auth, DemoAdapter
-src/features/      solo · boss · ghosts · endscreen · raid · home
+src/features/      solo · boss · ghosts · endscreen · raid · home (one component per file, logic in hooks)
 src/lib/           Executor, encounter builder, scoring, MIME, retry/concurrency, API client
 tests/             unit (jsdom) · server (node) · rules (Firebase emulator)
 e2e/               Playwright: demo, keyboard-only, axe accessibility, raid (two browsers)
@@ -130,15 +133,15 @@ Demo Mode works with **no configuration at all**. Without a Gemini key the game 
 
 ## Testing
 
-| Command                       | What it runs                                                                 |
-| ----------------------------- | ---------------------------------------------------------------------------- |
-| `npm test`                    | 200+ Vitest unit, component and API tests                                    |
-| `npm run coverage`            | The same suite with coverage, enforcing ≥80% lines, functions and statements |
-| `npm run test:rules`          | Realtime Database security rules on the Firebase emulator                    |
-| `npm run e2e`                 | Playwright: full demo run, keyboard-only run, axe on every screen, mobile    |
-| `RAID_E2E=1 npm run e2e:raid` | Raid Mode with a host and a player browser on the Firebase emulators         |
-| `npm run lint`                | ESLint (strict type-checked + jsx-a11y strict + react-hooks)                 |
-| `npm run typecheck`           | TypeScript strict across client, server and tooling                          |
+| Command                       | What it runs                                                                                   |
+| ----------------------------- | ---------------------------------------------------------------------------------------------- |
+| `npm test`                    | 230+ Vitest unit, component and API tests                                                      |
+| `npm run coverage`            | The same suite with coverage, enforcing ≥90% lines, functions and statements and ≥85% branches |
+| `npm run test:rules`          | Realtime Database security rules on the Firebase emulator                                      |
+| `npm run e2e`                 | Playwright: full demo run, keyboard-only run, axe on every screen, mobile                      |
+| `RAID_E2E=1 npm run e2e:raid` | Raid Mode with a host and a player browser on the Firebase emulators                           |
+| `npm run lint`                | ESLint (strict type-checked + jsx-a11y strict + react-hooks)                                   |
+| `npm run typecheck`           | TypeScript strict across client, server and tooling                                            |
 
 CI (`.github/workflows/ci.yml`) runs every check on every push: lint, typecheck, format check, unit tests with coverage, build, npm audit, rules tests and all Playwright suites.
 

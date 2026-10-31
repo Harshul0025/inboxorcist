@@ -33,6 +33,16 @@ function tinyInbox(): EmailItem[] {
   ];
 }
 
+/** Strikes the weak spot until the boss dies and the seal prompt opens (up to ~2 s under load). */
+async function defeatBoss(how: 'click' | 'key'): Promise<void> {
+  for (let i = 0; i < 200 && !screen.queryByRole('dialog'); i += 1) {
+    const spot = screen.queryByTestId('weak-spot');
+    if (spot && how === 'click') fireEvent.click(spot);
+    if (spot && how === 'key') fireEvent.keyDown(window, { key: spot.getAttribute('aria-keyshortcuts') ?? 'ArrowUp' });
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+}
+
 describe('SoloGame', () => {
   it('plays boss → seal → ghost wave → trapped souls (with a reply draft) → end screen', async () => {
     const adapter = new DemoAdapter({ latencyMs: 0, emails: tinyInbox() });
@@ -45,11 +55,7 @@ describe('SoloGame', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Start exorcism' }));
 
     // Boss: keep pressing the key the weak spot asks for until the seal prompt appears.
-    for (let i = 0; i < 30 && !screen.queryByRole('dialog'); i += 1) {
-      const spot = screen.queryByTestId('weak-spot');
-      if (spot) fireEvent.keyDown(window, { key: spot.getAttribute('aria-keyshortcuts') ?? 'ArrowUp' });
-      await new Promise((resolve) => setTimeout(resolve, 5));
-    }
+    await defeatBoss('key');
     fireEvent.click(await screen.findByRole('button', { name: 'Seal forever' }));
 
     expect(await screen.findByRole('heading', { name: 'Ghost wave' })).toBeInTheDocument();
@@ -71,11 +77,7 @@ describe('SoloGame', () => {
     const adapter = new DemoAdapter({ latencyMs: 0, emails: tinyInbox() });
     renderWithProviders(<SoloGame adapter={adapter} onExit={vi.fn()} onAgain={vi.fn()} />);
     fireEvent.click(await screen.findByRole('button', { name: 'Start exorcism' }));
-    for (let i = 0; i < 30 && !screen.queryByRole('dialog'); i += 1) {
-      const spot = screen.queryByTestId('weak-spot');
-      if (spot) fireEvent.click(spot);
-      await new Promise((resolve) => setTimeout(resolve, 5));
-    }
+    await defeatBoss('click');
     fireEvent.click(await screen.findByRole('button', { name: 'Not now' }));
     expect(await screen.findByRole('heading', { name: 'Ghost wave' })).toBeInTheDocument();
     expect(adapter.unsubscribed).toEqual([]);
@@ -94,11 +96,7 @@ describe('SoloGame', () => {
     );
     renderWithProviders(<SoloGame adapter={adapter} onExit={vi.fn()} onAgain={vi.fn()} />);
     fireEvent.click(await screen.findByRole('button', { name: 'Start exorcism' }));
-    for (let i = 0; i < 30 && !screen.queryByRole('dialog'); i += 1) {
-      const spot = screen.queryByTestId('weak-spot');
-      if (spot) fireEvent.click(spot);
-      await new Promise((resolve) => setTimeout(resolve, 5));
-    }
+    await defeatBoss('click');
     fireEvent.click(await screen.findByRole('button', { name: 'Seal forever' }));
     fireEvent.click(screen.getByRole('button', { name: 'End run' }));
     expect(await screen.findByRole('heading', { name: 'Exorcism complete' })).toBeInTheDocument();
