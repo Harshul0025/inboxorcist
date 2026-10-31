@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { EmailItem } from '../../../shared/types';
 import { connectGmail } from '../../../src/adapters/connectGmail';
@@ -79,6 +79,35 @@ describe('SoloGame', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Not now' }));
     expect(await screen.findByRole('heading', { name: 'Ghost wave' })).toBeInTheDocument();
     expect(adapter.unsubscribed).toEqual([]);
+  });
+
+  it('stays on the end screen when a seal finishes after "End run"', async () => {
+    const adapter = new DemoAdapter({ latencyMs: 0, emails: tinyInbox() });
+    let finishSeal: () => void = () => undefined;
+    vi.spyOn(adapter, 'seal').mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finishSeal = () => {
+            resolve({ filtered: true, unsubscribed: false });
+          };
+        }),
+    );
+    renderWithProviders(<SoloGame adapter={adapter} onExit={vi.fn()} onAgain={vi.fn()} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Start exorcism' }));
+    for (let i = 0; i < 30 && !screen.queryByRole('dialog'); i += 1) {
+      const spot = screen.queryByTestId('weak-spot');
+      if (spot) fireEvent.click(spot);
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
+    fireEvent.click(await screen.findByRole('button', { name: 'Seal forever' }));
+    fireEvent.click(screen.getByRole('button', { name: 'End run' }));
+    expect(await screen.findByRole('heading', { name: 'Exorcism complete' })).toBeInTheDocument();
+    await act(async () => {
+      finishSeal();
+      await Promise.resolve();
+    });
+    expect(screen.getByRole('heading', { name: 'Exorcism complete' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Ghost wave' })).not.toBeInTheDocument();
   });
 
   it('recovers from a failed scan', async () => {

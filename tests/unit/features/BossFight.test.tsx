@@ -64,8 +64,11 @@ describe('BossFight', () => {
     expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuemax', String(total));
     expect(spot).toHaveAttribute('aria-keyshortcuts', 'ArrowUp');
 
-    fireEvent.keyDown(window, { key: 'ArrowDown' });
-    expect(onMiss).toHaveBeenCalledTimes(1);
+    // The key listener attaches in an effect right after the weak spot renders.
+    await vi.waitFor(() => {
+      fireEvent.keyDown(window, { key: 'ArrowDown' });
+      expect(onMiss).toHaveBeenCalled();
+    });
 
     fireEvent.click(spot);
     await vi.waitFor(() => {
@@ -90,8 +93,9 @@ describe('BossFight', () => {
     await vi.waitFor(() => {
       expect(onDefeated).toHaveBeenCalled();
     });
-    expect(screen.getByText('“Wait! 70% off!”')).toBeInTheDocument();
-    expect(screen.getByText('Here lies Swiggy.')).toBeInTheDocument();
+    // Toasts render on the next commit after the boss dies, so wait for them.
+    expect(await screen.findByText('“Wait! 70% off!”')).toBeInTheDocument();
+    expect(await screen.findByText('Here lies Swiggy.')).toBeInTheDocument();
   });
 
   it('skips important mail and handles an empty boss', async () => {
@@ -126,13 +130,31 @@ describe('BossFight', () => {
   it('moves the weak spot when the window expires', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     try {
-      setup();
+      // Every move lands somewhere new, so the check holds even if a move already happened.
+      let calls = 0;
+      const adapter = new DemoAdapter({ latencyMs: 0 });
+      renderWithProviders(
+        <BossFight
+          boss={boss}
+          adapter={adapter}
+          executor={new RunExecutor(adapter, 'run')}
+          importantIds={new Set()}
+          streak={0}
+          random={() => ((calls += 1) % 7) / 7}
+          onHit={vi.fn()}
+          onMiss={vi.fn()}
+          onDefeated={vi.fn()}
+        />,
+      );
       const spot = await screen.findByTestId('weak-spot');
       const before = spot.style.left;
-      act(() => {
-        vi.advanceTimersByTime(2000);
+      // The move timer is armed in an effect after render, so keep advancing until it fires.
+      await vi.waitFor(() => {
+        act(() => {
+          vi.advanceTimersByTime(2000);
+        });
+        expect(screen.getByTestId('weak-spot').style.left).not.toBe(before);
       });
-      expect(screen.getByTestId('weak-spot').style.left).not.toBe(before);
     } finally {
       vi.useRealTimers();
     }

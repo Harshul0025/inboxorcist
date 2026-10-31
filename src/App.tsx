@@ -29,16 +29,18 @@ function initialScreen(): Screen {
 function Header() {
   const { streamer, sound, setStreamer, setSound } = useSettings();
   return (
-    <header className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-4">
-      <h1 className="text-2xl font-black tracking-tight">
-        <span aria-hidden="true">👻 </span>
-        {strings.appName}
+    <header className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-5">
+      <h1 className="flex items-center gap-2 text-3xl sm:text-4xl">
+        <span aria-hidden="true" className="float inline-block">
+          👻
+        </span>
+        <span className="font-spooky text-gradient text-glow flicker">{strings.appName}</span>
       </h1>
-      <div className="flex flex-wrap items-center gap-4 text-sm">
-        <label className="flex items-center gap-2" title={strings.settings.streamerHint}>
+      <div className="flex flex-wrap items-center gap-5 text-sm font-medium text-violet-100">
+        <label className="flex cursor-pointer items-center gap-2" title={strings.settings.streamerHint}>
           <input
             type="checkbox"
-            className="h-4 w-4 accent-purple-500"
+            className="switch"
             checked={streamer}
             onChange={(event) => {
               setStreamer(event.target.checked);
@@ -46,10 +48,10 @@ function Header() {
           />
           {strings.settings.streamer}
         </label>
-        <label className="flex items-center gap-2">
+        <label className="flex cursor-pointer items-center gap-2">
           <input
             type="checkbox"
-            className="h-4 w-4 accent-purple-500"
+            className="switch"
             checked={sound}
             onChange={(event) => {
               setSound(event.target.checked);
@@ -171,7 +173,7 @@ export function App({ services }: { services: Services }) {
               {strings.skipToContent}
             </a>
             <Header />
-            <main id="main" tabIndex={-1} className="mx-auto max-w-5xl px-4 pb-16">
+            <main id="main" tabIndex={-1} className="mx-auto max-w-6xl px-4 pb-20">
               <Screens services={services} />
             </main>
           </ServicesProvider>

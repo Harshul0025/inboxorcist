@@ -69,7 +69,11 @@ function SoloRun({ adapter, scan, proposal, plan, onExit, onAgain }: SoloRunProp
   const categories = useMemo(() => [...new Set(proposal.verdicts.map((v) => v.category))], [proposal]);
   const encounter = plan.encounters[index];
 
+  // Once a run is ending, late callbacks (a seal or vote finishing after "End run") must not resume it.
+  const ending = useRef(false);
   const finish = useCallback(async () => {
+    if (ending.current) return;
+    ending.current = true;
     const unreadAfter = await adapter.unreadCount().catch(() => counter.count);
     const totals = executor.totals;
     setStats({
@@ -97,6 +101,7 @@ function SoloRun({ adapter, scan, proposal, plan, onExit, onAgain }: SoloRunProp
   ]);
 
   const next = useCallback(() => {
+    if (ending.current) return;
     if (index + 1 >= plan.encounters.length) {
       void finish();
       return;

@@ -135,17 +135,21 @@ export function GhostWave({ ghosts, mode, executor, onDecision, onRescued, onCom
   return (
     <section aria-labelledby="wave-heading" className="card">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id="wave-heading" className="text-2xl font-bold">
+        <h2 id="wave-heading" className="font-spooky text-gradient text-4xl sm:text-5xl">
           {souls ? strings.ghosts.soulsHeading : strings.ghosts.heading}
         </h2>
         <span className="text-sm text-slate-300">{strings.ghosts.of(index + 1, ghosts.length)}</span>
       </div>
       {souls && <p className="mt-1 text-slate-300">{strings.ghosts.soulsIntro}</p>}
 
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-800" aria-hidden="true">
+      <div className="mt-3 h-2.5 overflow-hidden rounded-full border border-white/10 bg-black/40" aria-hidden="true">
         <div
           key={index}
-          className={reducedMotion ? 'h-full w-full bg-amber-400/60' : 'timer-bar h-full bg-amber-400'}
+          className={
+            reducedMotion
+              ? 'h-full w-full bg-amber-400/60'
+              : 'timer-bar h-full bg-gradient-to-r from-rose-500 via-orange-400 to-amber-300'
+          }
           style={{ animationDuration: `${timeMs}ms` }}
         />
       </div>
@@ -159,10 +163,13 @@ export function GhostWave({ ghosts, mode, executor, onDecision, onRescued, onCom
         dragSnapToOrigin
         dragElastic={0.6}
         onDragEnd={onDragEnd}
-        initial={reducedMotion ? false : { opacity: 0, y: 30, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
+        // No fade: text stays at full contrast while the card slides in.
+        initial={reducedMotion ? false : { y: 30, scale: 0.95 }}
+        animate={{ y: 0, scale: 1 }}
         className={`mt-3 flex cursor-grab touch-none gap-4 rounded-3xl border p-4 active:cursor-grabbing ${
-          ghost.isImportant ? 'border-amber-400/70 bg-amber-950/30' : 'border-purple-400/30 bg-slate-900'
+          ghost.isImportant
+            ? 'border-amber-300/70 bg-amber-950/40 shadow-[0_0_40px_-10px_rgb(250_204_21)]'
+            : 'border-violet-400/40 bg-violet-950/50 shadow-[0_0_40px_-14px_rgb(192_132_252)]'
         }`}
         aria-label={strings.ghosts.of(index + 1, ghosts.length)}
       >

@@ -1,4 +1,4 @@
-import { motion } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   REDUCED_MOTION_WINDOW_MS,
@@ -11,6 +11,7 @@ import { useAnnounce } from '../../app/announcer';
 import { useSettings } from '../../app/settings';
 import { useStory } from '../../app/story';
 import { GhostSprite } from '../../components/GhostSprite';
+import { Graveyard } from '../../components/Graveyard';
 import type { BossSpec } from '../../lib/encounters';
 import type { RunExecutor } from '../../lib/executor';
 import { playSound } from '../../lib/sound';
@@ -27,6 +28,7 @@ const ARROW_SYMBOL: Readonly<Record<ArrowKey, string>> = {
   ArrowRight: '→',
 };
 const CENTER = { x: 50, y: 50 };
+const DAMAGE_POP_MS = 900;
 
 interface BossFightProps {
   boss: BossSpec;
@@ -64,14 +66,24 @@ export function BossFight({
   const [spawn, setSpawn] = useState(0);
   const [spot, setSpot] = useState<{ x: number; y: number; key: ArrowKey }>({ ...CENTER, key: 'ArrowUp' });
 
+  const [pops, setPops] = useState<{ id: number; amount: number; x: number }[]>([]);
+  const popId = useRef(0);
+
   const handleChunk = useCallback(
     (emails: number) => {
       clearedRef.current += emails;
       onHit(emails);
       if (sound) playSound('hit');
       announce(strings.boss.cleared(clearedRef.current));
+      // Floating "-N" damage number; purely decorative.
+      popId.current += 1;
+      const id = popId.current;
+      setPops((current) => [...current.slice(-4), { id, amount: emails, x: 40 + random() * 20 }]);
+      setTimeout(() => {
+        setPops((current) => current.filter((pop) => pop.id !== id));
+      }, DAMAGE_POP_MS);
     },
-    [announce, onHit, sound],
+    [announce, onHit, random, sound],
   );
 
   const engine = useBossEngine({ boss, adapter, executor, importantIds, onChunk: handleChunk });
@@ -143,18 +155,20 @@ export function BossFight({
 
   return (
     <section aria-labelledby="boss-name" className="card">
-      <div className="flex flex-col items-center gap-2 text-center">
-        <span className="rounded-full bg-purple-500/20 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-purple-200">
-          {boss.category}
+      <div className="flex flex-col items-center gap-3 text-center">
+        <span className="chip">
+          <span aria-hidden="true">💀</span> {boss.category}
         </span>
-        <h2 id="boss-name" className="sensitive text-3xl font-black text-amber-200">
+        <h2 id="boss-name" className="sensitive font-spooky text-gradient text-glow text-4xl sm:text-6xl">
           {boss.bossName}
         </h2>
-        <p className="sensitive max-w-xl rounded-2xl bg-slate-800 px-4 py-2 text-slate-200 italic">“{boss.taunt}”</p>
+        <p className="sensitive relative max-w-2xl rounded-2xl border border-violet-300/20 bg-violet-950/60 px-5 py-3 text-lg text-violet-50 italic">
+          “{boss.taunt}”
+        </p>
       </div>
 
       <div className="mt-4">
-        <div className="mb-1 flex justify-between text-sm text-slate-300">
+        <div className="mb-2 flex justify-between text-sm font-medium text-violet-100">
           <span id="boss-hp-label">{strings.boss.hp}</span>
           <span className="tabular-nums" data-testid="boss-hp">
             {strings.boss.hpValue(engine.hp, engine.maxHp)}
@@ -167,12 +181,9 @@ export function BossFight({
           aria-valuemax={engine.maxHp}
           aria-valuenow={engine.hp}
           aria-valuetext={strings.boss.hpValue(engine.hp, engine.maxHp)}
-          className="h-4 overflow-hidden rounded-full bg-slate-800"
+          className="hp-bar"
         >
-          <div
-            className="h-full origin-left bg-gradient-to-r from-rose-500 to-amber-400 transition-transform duration-300"
-            style={{ transform: `scaleX(${percent / 100})` }}
-          />
+          <div className="hp-fill" style={{ transform: `scaleX(${percent / 100})` }} />
         </div>
       </div>
 
@@ -204,16 +215,45 @@ export function BossFight({
 
       {(engine.status === 'fighting' || engine.status === 'defeated') && (
         <>
-          <p className="mt-4 text-center text-sm text-slate-400">{strings.boss.instructions}</p>
-          <div className="relative mt-3 h-72 overflow-hidden rounded-3xl bg-gradient-to-b from-slate-900 to-purple-950 sm:h-80">
+          <p className="mt-4 text-center text-sm text-violet-200/80">{strings.boss.instructions}</p>
+          <div className="arena mt-3 h-80 sm:h-96">
+            <Graveyard />
+            {!reducedMotion && shake > 0 && (
+              <motion.div
+                key={`flash-${shake}`}
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 bg-amber-200"
+                initial={{ opacity: 0.22 }}
+                animate={{ opacity: 0 }}
+                transition={{ duration: 0.25 }}
+              />
+            )}
             <motion.div
               key={shake}
               className="absolute inset-0 flex items-center justify-center"
-              animate={reducedMotion ? {} : { x: [0, -12, 12, -6, 6, 0] }}
+              animate={reducedMotion ? {} : { x: [0, -14, 14, -7, 7, 0], rotate: [0, -3, 3, 0] }}
               transition={{ duration: 0.3 }}
             >
-              <GhostSprite seed={boss.sender} size={180} />
+              <div className={reducedMotion ? '' : 'float'}>
+                <GhostSprite seed={boss.sender} size={200} />
+              </div>
             </motion.div>
+            <AnimatePresence>
+              {pops.map((pop) => (
+                <motion.span
+                  key={pop.id}
+                  aria-hidden="true"
+                  className="font-spooky pointer-events-none absolute top-1/3 text-5xl text-amber-300 drop-shadow-[0_0_12px_rgba(251,146,60,0.9)]"
+                  style={{ left: `${pop.x}%` }}
+                  initial={{ opacity: 1, y: 0, scale: reducedMotion ? 1 : 0.6 }}
+                  animate={reducedMotion ? { opacity: 1 } : { opacity: 0, y: -80, scale: 1.2 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.85, ease: 'easeOut' }}
+                >
+                  -{pop.amount}
+                </motion.span>
+              ))}
+            </AnimatePresence>
             {engine.status === 'fighting' && (
               <button
                 type="button"

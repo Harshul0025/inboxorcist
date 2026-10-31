@@ -20,7 +20,7 @@ export async function startDemo(page: Page): Promise<void> {
 /** Presses whatever arrow the weak spot asks for until the boss is defeated. */
 export async function defeatBoss(page: Page): Promise<void> {
   const dialog = page.getByRole('dialog');
-  for (let i = 0; i < 60 && !(await dialog.isVisible()); i += 1) {
+  for (let i = 0; i < 150 && !(await dialog.isVisible()); i += 1) {
     const spot = page.getByTestId('weak-spot');
     const key = await spot.getAttribute('aria-keyshortcuts', { timeout: 2000 }).catch(() => null);
     if (key) await page.keyboard.press(key);

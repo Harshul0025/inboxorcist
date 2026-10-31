@@ -4,6 +4,8 @@ import { defeatBoss, trackErrors } from './helpers';
 test('the whole game is playable with the keyboard alone', async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto('/');
+  // The app renders after its config loads; wait for it before tabbing.
+  await expect(page.getByRole('button', { name: 'Play demo' })).toBeVisible();
 
   // Skip link is the first tab stop.
   await page.keyboard.press('Tab');
