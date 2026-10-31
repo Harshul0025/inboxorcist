@@ -91,6 +91,14 @@
     scale: 0.94;
   }
 
+  .story-panel {
+    border: 2px solid rgb(250 204 21 / 0.7);
+    background: rgb(30 27 46 / 0.96);
+    box-shadow:
+      4px 4px 0 rgb(250 204 21 / 0.35),
+      0 12px 30px -12px rgb(0 0 0 / 0.8);
+  }
+
   .timer-bar {
     width: 100%;
     transform-origin: left;

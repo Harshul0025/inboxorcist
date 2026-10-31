@@ -3,6 +3,7 @@ import { RAID_CODE_LENGTH } from '../shared/constants';
 import { AnnouncerProvider } from './app/announcer';
 import { type Services, ServicesProvider } from './app/services';
 import { SettingsProvider, useSettings } from './app/settings';
+import { StoryProvider } from './app/story';
 import { connectGmail } from './adapters/connectGmail';
 import { DemoAdapter } from './adapters/DemoAdapter';
 import type { ChoreAdapter } from './adapters/types';
@@ -164,15 +165,17 @@ export function App({ services }: { services: Services }) {
   return (
     <SettingsProvider>
       <AnnouncerProvider>
-        <ServicesProvider services={services}>
-          <a href="#main" className="skip-link">
-            {strings.skipToContent}
-          </a>
-          <Header />
-          <main id="main" tabIndex={-1} className="mx-auto max-w-5xl px-4 pb-16">
-            <Screens services={services} />
-          </main>
-        </ServicesProvider>
+        <StoryProvider>
+          <ServicesProvider services={services}>
+            <a href="#main" className="skip-link">
+              {strings.skipToContent}
+            </a>
+            <Header />
+            <main id="main" tabIndex={-1} className="mx-auto max-w-5xl px-4 pb-16">
+              <Screens services={services} />
+            </main>
+          </ServicesProvider>
+        </StoryProvider>
       </AnnouncerProvider>
     </SettingsProvider>
   );

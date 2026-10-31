@@ -185,6 +185,59 @@ export const strings = {
     end: 'End raid',
   },
 
+  story: {
+    dismiss: 'Dismiss',
+    regionLabel: 'Story',
+    narrator: 'Narrator',
+    crowd: 'The crowd',
+    ghost: 'A ghost',
+    runStart: [
+      (n: number) =>
+        `Chapter 1: ${formatCount(n)} unread ghosts have been living rent-free in your inbox. Tonight, they get evicted.`,
+      (n: number) =>
+        `It was a dark and stormy night. ${formatCount(n)} unread emails whispered "open me"… you did not.`,
+      (n: number) =>
+        `Breaking: local inbox found with ${formatCount(n)} unread emails. Exorcist dispatched. That's you.`,
+    ],
+    waveStart: [
+      'A wave of mysterious ghosts approaches. Gemini isn’t sure about these. Neither are we.',
+      'Uncertain spirits incoming. Trust your gut, not their subject lines.',
+      'These ghosts refused to be classified. Respect the chaos.',
+    ],
+    soulsStart: [
+      'Wait… these ones are real people. Handle with care, and maybe reply this year.',
+      'Trapped souls detected: bills, deadlines and humans. No banishing allowed.',
+    ],
+    combo: [
+      (m: number) => `Combo x${m}! Your inbox has never felt this seen.`,
+      (m: number) => `x${m} combo! Somewhere, an Inbox Zero influencer just shed a tear.`,
+      (m: number) => `x${m}! Gmail's servers are sweating.`,
+    ],
+    ghostTimeout: [
+      'Too slow! I’m moving into your Promotions tab. Permanently.',
+      'Hesitation detected. The ghost has been kept… and it’s smug about it.',
+      'You blinked. The ghost now has squatter’s rights.',
+    ],
+    banish: [
+      (sender: string) => `${sender} has been yeeted into the archive.`,
+      () => 'One less notification. Your dopamine receptors are confused.',
+      (sender: string) => `${sender} tried to say "Last chance!". It was, in fact, the last chance.`,
+    ],
+    keep: [
+      () => 'Kept. Even ghosts deserve a second chance.',
+      () => 'Spared. The ghost promises to behave. (It won’t.)',
+    ],
+    rescue: [
+      (name: string) => `${name} has been rescued from the void. Reply before they haunt you too.`,
+      (name: string) => `Soul saved: ${name}. Your future self says thanks.`,
+      (name: string) => `${name} is safe! Starred, labelled, and slightly judging your response time.`,
+    ],
+    sealed: [
+      (boss: string) => `${boss} has been sealed forever. Future emails will bounce off the force field.`,
+      (boss: string) => `${boss} is now banned from your inbox. It will haunt your spam folder instead.`,
+    ],
+  },
+
   errors: {
     generic: 'Something went wrong.',
     reload: 'Reload',

@@ -1,8 +1,10 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { STORY_CHATTER_CHANCE } from '../../../shared/constants';
 import type { ChoreAction, Proposal, RunStats } from '../../../shared/types';
 import type { ChoreAdapter, ScanResult } from '../../adapters/types';
 import { useAnnounce } from '../../app/announcer';
 import { useServices } from '../../app/services';
+import { useStory } from '../../app/story';
 import { Hud } from '../../components/Hud';
 import { OfflineBanner } from '../../components/OfflineBanner';
 import { useRunSetup } from '../../hooks/useRunSetup';
@@ -10,6 +12,7 @@ import { useScoreboard } from '../../hooks/useScoreboard';
 import { useUnreadCounter } from '../../hooks/useUnreadCounter';
 import type { EncounterPlan, GhostSpec } from '../../lib/encounters';
 import { createRunId, RunExecutor } from '../../lib/executor';
+import { storyLines } from '../../lib/story';
 import { strings } from '../../strings';
 import { BossFight } from '../boss/BossFight';
 import { SealPrompt } from '../boss/SealPrompt';
@@ -51,6 +54,7 @@ type Phase = 'briefing' | 'playing' | 'sealing' | 'ended';
 function SoloRun({ adapter, scan, proposal, plan, onExit, onAgain }: SoloRunProps) {
   const { api } = useServices();
   const announce = useAnnounce();
+  const tell = useStory();
   const [runId] = useState(() => createRunId());
   const executor = useMemo(() => new RunExecutor(adapter, runId), [adapter, runId]);
   const scoreboard = useScoreboard();
@@ -122,13 +126,30 @@ function SoloRun({ adapter, scan, proposal, plan, onExit, onAgain }: SoloRunProp
   );
 
   const onDecision = useCallback(
-    (_action: ChoreAction, timedOut: boolean) => {
+    (action: ChoreAction, timedOut: boolean, ghost: GhostSpec) => {
       if (timedOut) scoreboard.miss();
       else scoreboard.decide();
       counter.refresh();
+      if (action === 'rescue') tell(storyLines.rescue(ghost.email.senderName));
+      else if (timedOut || Math.random() < STORY_CHATTER_CHANCE) {
+        tell(storyLines.decision(action, ghost.email.senderName, timedOut));
+      }
     },
-    [counter, scoreboard],
+    [counter, scoreboard, tell],
   );
+
+  // Narrate the start of each ghost wave and the trapped souls.
+  useEffect(() => {
+    if (phase !== 'playing' || !encounter || encounter.kind === 'boss') return;
+    tell(encounter.kind === 'souls' ? storyLines.soulsStart() : storyLines.waveStart());
+  }, [encounter, phase, tell]);
+
+  // Cheer every time the combo multiplier goes up.
+  const lastMultiplier = useRef(1);
+  useEffect(() => {
+    if (scoreboard.multiplier > lastMultiplier.current) tell(storyLines.combo(scoreboard.multiplier));
+    lastMultiplier.current = scoreboard.multiplier;
+  }, [scoreboard.multiplier, tell]);
 
   const onRescued = useCallback(
     (ghost: GhostSpec) => {
@@ -157,6 +178,7 @@ function SoloRun({ adapter, scan, proposal, plan, onExit, onAgain }: SoloRunProp
         onStart={(drafts) => {
           draftsEnabled.current = drafts;
           startedAt.current = Date.now();
+          tell(storyLines.runStart(scan.totalUnread));
           setPhase('playing');
         }}
       />
@@ -195,7 +217,10 @@ function SoloRun({ adapter, scan, proposal, plan, onExit, onAgain }: SoloRunProp
           adapter={adapter}
           runId={runId}
           onDone={(didSeal) => {
-            if (didSeal) setSealed((value) => value + 1);
+            if (didSeal) {
+              setSealed((value) => value + 1);
+              tell(storyLines.sealed(encounter.boss.bossName));
+            }
             next();
           }}
         />

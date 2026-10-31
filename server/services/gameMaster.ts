@@ -4,7 +4,9 @@ import { fallbackDraft, fallbackRoast } from '../../shared/fallbacks.js';
 import {
   BOSS_NAME_MAX,
   DRAFT_MAX,
+  EPITAPH_MAX,
   GEMINI_TIMEOUT_MS,
+  PLEA_MAX,
   PROPOSE_BATCH_SIZE,
   RAID_SUMMARY_MAX,
   ROAST_LINE_MAX,
@@ -41,8 +43,27 @@ const verdictJsonSchema = {
       type: 'string',
       description: `Privacy-safe description with NO names, addresses or subjects, max ${RAID_SUMMARY_MAX} chars.`,
     },
+    plea: {
+      type: 'string',
+      description: `What the boss desperately begs at half health, funny and in character, max ${PLEA_MAX} chars.`,
+    },
+    epitaph: {
+      type: 'string',
+      description: `Funny one-line tombstone shown when the boss is defeated, referencing its emails, max ${EPITAPH_MAX} chars.`,
+    },
   },
-  required: ['sender', 'category', 'action', 'confidence', 'isImportant', 'bossName', 'taunt', 'summary'],
+  required: [
+    'sender',
+    'category',
+    'action',
+    'confidence',
+    'isImportant',
+    'bossName',
+    'taunt',
+    'summary',
+    'plea',
+    'epitaph',
+  ],
 } as const;
 
 const proposalJsonSchema = {
@@ -71,11 +92,21 @@ const draftJsonSchema = {
   required: ['body'],
 } as const;
 
-function clampVerdict(raw: unknown): SenderVerdict | null {
+function clampText(value: unknown, max: number, fallback = ''): string {
+  if (typeof value !== 'string') return fallback;
+  const clean = truncate(cleanText(value), max);
+  return clean.length > 0 ? clean : fallback;
+}
+
+function clampVerdict(raw: unknown, rules: ReadonlyMap<string, SenderVerdict>): SenderVerdict | null {
   if (typeof raw !== 'object' || raw === null) return null;
   const record = raw as Record<string, unknown>;
+  const rule = typeof record.sender === 'string' ? rules.get(record.sender) : undefined;
   const candidate = {
     ...record,
+    // Story lines are optional extras: fall back to the rulebook rather than dropping the verdict.
+    plea: clampText(record.plea, PLEA_MAX, rule?.plea),
+    epitaph: clampText(record.epitaph, EPITAPH_MAX, rule?.epitaph),
     bossName: typeof record.bossName === 'string' ? truncate(cleanText(record.bossName), BOSS_NAME_MAX) : '',
     taunt: typeof record.taunt === 'string' ? truncate(cleanText(record.taunt), TAUNT_MAX) : '',
     summary: typeof record.summary === 'string' ? truncate(cleanText(record.summary), RAID_SUMMARY_MAX) : '',
@@ -99,9 +130,10 @@ export function mergeProposal(
 ): Proposal {
   const fallback = fallbackProposal(groups);
   const known = new Set(groups.map((group) => group.sender));
+  const rules = new Map(fallback.verdicts.map((verdict) => [verdict.sender, verdict]));
   const fromLlm = new Map<string, SenderVerdict>();
   for (const raw of rawVerdicts) {
-    const verdict = clampVerdict(raw);
+    const verdict = clampVerdict(raw, rules);
     if (verdict && known.has(verdict.sender)) fromLlm.set(verdict.sender, verdict);
   }
 
@@ -137,6 +169,7 @@ function buildProposalPrompt(groups: readonly SenderGroup[]): string {
     'action: "banish" = safe to mark read and archive (promotions, notifications, newsletters);',
     '"keep" = leave untouched; "rescue" = important, star it for a reply.',
     'Mark isImportant=true for real people, money, bills, deadlines, security codes or anything risky.',
+    'Make bossName, taunt, plea and epitaph genuinely funny, Halloween-themed and specific to the emails.',
     'Also list in importantIds the sample ids of individual emails that look important.',
     '<data>',
     JSON.stringify(groups),

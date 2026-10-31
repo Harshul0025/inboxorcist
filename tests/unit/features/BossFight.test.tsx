@@ -1,6 +1,7 @@
 import { act, fireEvent, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { DemoAdapter } from '../../../src/adapters/DemoAdapter';
+import { StoryProvider } from '../../../src/app/story';
 import { BossFight } from '../../../src/features/boss/BossFight';
 import type { BossSpec } from '../../../src/lib/encounters';
 import { RunExecutor } from '../../../src/lib/executor';
@@ -13,6 +14,8 @@ const boss: BossSpec = {
   taunt: 'Biryani?',
   summary: 'Food delivery promotions',
   category: 'Food delivery',
+  plea: 'Wait! 70% off!',
+  epitaph: 'Here lies Swiggy.',
   estimatedHp: 40,
 };
 
@@ -32,6 +35,25 @@ function setup(options: { adapter?: DemoAdapter; important?: Set<string> } = {})
     />,
   );
   return { adapter, executor, ...props };
+}
+
+function setupWithStory() {
+  const adapter = new DemoAdapter({ latencyMs: 0 });
+  const props = { onHit: vi.fn(), onMiss: vi.fn(), onDefeated: vi.fn() };
+  renderWithProviders(
+    <StoryProvider>
+      <BossFight
+        boss={boss}
+        adapter={adapter}
+        executor={new RunExecutor(adapter, 'run')}
+        importantIds={new Set()}
+        streak={0}
+        random={() => 0}
+        {...props}
+      />
+    </StoryProvider>,
+  );
+  return props;
 }
 
 describe('BossFight', () => {
@@ -56,6 +78,20 @@ describe('BossFight', () => {
       expect(onDefeated).toHaveBeenCalledWith(total);
     });
     expect(await adapter.idsForSender(boss.sender)).toEqual([]);
+  });
+
+  it('begs at half health and gets an epitaph when defeated', async () => {
+    const { onDefeated } = setupWithStory();
+    const spot = await screen.findByTestId('weak-spot');
+    for (let i = 0; i < 10 && !onDefeated.mock.calls.length; i += 1) {
+      fireEvent.click(spot);
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
+    await vi.waitFor(() => {
+      expect(onDefeated).toHaveBeenCalled();
+    });
+    expect(screen.getByText('“Wait! 70% off!”')).toBeInTheDocument();
+    expect(screen.getByText('Here lies Swiggy.')).toBeInTheDocument();
   });
 
   it('skips important mail and handles an empty boss', async () => {

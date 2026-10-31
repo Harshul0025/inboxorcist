@@ -19,6 +19,10 @@ export interface BossSpec {
   taunt: string;
   summary: string;
   category: string;
+  /** Begged at half health (storyboard notification). */
+  plea: string;
+  /** Shown when the boss is defeated (storyboard notification). */
+  epitaph: string;
   /** Unread count seen in the sample; the real HP is loaded when the fight starts. */
   estimatedHp: number;
   unsubscribeUrl?: string;
@@ -87,6 +91,8 @@ export function buildEncounters(scan: ScanResult, proposal: Proposal): Encounter
         taunt: verdict.taunt,
         summary: verdict.summary,
         category: verdict.category,
+        plea: verdict.plea,
+        epitaph: verdict.epitaph,
         estimatedHp: group.count,
         ...(unsubscribeUrl ? { unsubscribeUrl } : {}),
       };

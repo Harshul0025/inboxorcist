@@ -36,7 +36,7 @@ interface GhostWaveProps {
   ghosts: readonly GhostSpec[];
   mode: 'ghosts' | 'souls';
   executor: RunExecutor;
-  onDecision: (action: ChoreAction, timedOut: boolean) => void;
+  onDecision: (action: ChoreAction, timedOut: boolean, ghost: GhostSpec) => void;
   onRescued?: (ghost: GhostSpec) => void;
   onComplete: () => void;
 }
@@ -74,7 +74,7 @@ export function GhostWave({ ghosts, mode, executor, onDecision, onRescued, onCom
         announce(strings.ghosts.banishDisabled, 'assertive');
         return;
       }
-      onDecision(action, timedOut);
+      onDecision(action, timedOut, ghost);
       if (sound) playSound(action === 'rescue' ? 'rescue' : timedOut ? 'miss' : 'decide');
       announce(timedOut ? strings.ghosts.timeout : strings.ghosts.decided(action));
       executor.apply(action, [ghost.email.id]).then(

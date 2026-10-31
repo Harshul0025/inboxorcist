@@ -63,6 +63,19 @@ describe('mergeProposal', () => {
     expect(proposal.importantIds).not.toContain('not-a-sample');
   });
 
+  it('keeps Gemini story lines and falls back to the rulebook when they are missing', () => {
+    const withLines = mergeProposal(
+      twoGroups,
+      [{ ...geminiVerdict, plea: 'Not the biryani!', epitaph: 'RIP coupons' }],
+      [],
+    );
+    expect(withLines.verdicts[0]).toMatchObject({ plea: 'Not the biryani!', epitaph: 'RIP coupons' });
+    const without = mergeProposal(twoGroups, [geminiVerdict], []);
+    expect(without.verdicts[0]?.bossName).toBe('The Biryani Banshee');
+    expect(without.verdicts[0]?.plea.length).toBeGreaterThan(0);
+    expect(without.verdicts[0]?.epitaph.length).toBeGreaterThan(0);
+  });
+
   it('reports fallback when Gemini returned nothing usable', () => {
     expect(mergeProposal(twoGroups, [], []).source).toBe('fallback');
   });
